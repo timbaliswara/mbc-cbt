@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420">
+  <rect width="720" height="420" fill="#f8fafc"/>
+  <rect x="130" y="80" width="460" height="260" rx="10" fill="#dcfce7" stroke="#047857" stroke-width="8"/>
+  <path d="M150 120h420M150 170h420M150 220h420M150 270h420M210 100v220M280 100v220M350 100v220M420 100v220M490 100v220" stroke="#86efac" stroke-width="2"/>
+  <text x="360" y="63" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#064e3b">Denah Taman Sekolah</text>
+  <text x="360" y="382" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#064e3b">Panjang 18 m</text>
+  <g transform="translate(615 210) rotate(90)">
+    <text text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#064e3b">Lebar 12 m</text>
+  </g>
+  <circle cx="235" cy="165" r="28" fill="#22c55e"/>
+  <circle cx="475" cy="245" r="28" fill="#22c55e"/>
+  <path d="M230 143c8-18 24-21 37-6-17 2-24 10-37 6zM470 223c8-18 24-21 37-6-17 2-24 10-37 6z" fill="#16a34a"/>
+</svg>

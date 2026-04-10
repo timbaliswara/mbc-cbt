@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="260" viewBox="0 0 820 260">
+  <rect width="820" height="260" fill="#f8fafc"/>
+  <text x="410" y="42" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#064e3b">Rantai Makanan Sawah</text>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#047857"/>
+    </marker>
+  </defs>
+  <g font-family="Arial, sans-serif" font-size="18" font-weight="700" text-anchor="middle">
+    <rect x="42" y="96" width="110" height="68" rx="8" fill="#dcfce7" stroke="#047857" stroke-width="3"/>
+    <text x="97" y="137" fill="#064e3b">Padi</text>
+    <rect x="202" y="96" width="120" height="68" rx="8" fill="#fef9c3" stroke="#ca8a04" stroke-width="3"/>
+    <text x="262" y="137" fill="#713f12">Belalang</text>
+    <rect x="372" y="96" width="110" height="68" rx="8" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
+    <text x="427" y="137" fill="#1e3a8a">Katak</text>
+    <rect x="532" y="96" width="110" height="68" rx="8" fill="#fee2e2" stroke="#dc2626" stroke-width="3"/>
+    <text x="587" y="137" fill="#7f1d1d">Ular</text>
+    <rect x="692" y="96" width="90" height="68" rx="8" fill="#f3e8ff" stroke="#7c3aed" stroke-width="3"/>
+    <text x="737" y="137" fill="#4c1d95">Elang</text>
+  </g>
+  <g stroke="#047857" stroke-width="4" marker-end="url(#arrow)">
+    <line x1="152" y1="130" x2="195" y2="130"/>
+    <line x1="322" y1="130" x2="365" y2="130"/>
+    <line x1="482" y1="130" x2="525" y2="130"/>
+    <line x1="642" y1="130" x2="685" y2="130"/>
+  </g>
+</svg>

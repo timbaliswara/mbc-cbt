@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <title>Panduan Pemakaian MBC CBT</title>
+    <style>
+        @page { size: A4; margin: 18mm; }
+        * { box-sizing: border-box; }
+        body {
+            color: #18181b;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.55;
+            margin: 0;
+        }
+        .cover {
+            background: linear-gradient(135deg, #047857, #0f766e);
+            border-radius: 8px;
+            color: #fff;
+            margin-bottom: 22px;
+            padding: 34px;
+        }
+        .eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            margin: 0 0 12px;
+            text-transform: uppercase;
+        }
+        h1 {
+            font-size: 34px;
+            letter-spacing: -0.04em;
+            line-height: 1.05;
+            margin: 0;
+        }
+        h2 {
+            border-bottom: 1px solid #d4d4d8;
+            color: #064e3b;
+            font-size: 20px;
+            margin: 24px 0 10px;
+            padding-bottom: 6px;
+        }
+        h3 {
+            color: #18181b;
+            font-size: 15px;
+            margin: 18px 0 8px;
+        }
+        p { margin: 0 0 9px; }
+        ul, ol { margin: 6px 0 12px 20px; padding: 0; }
+        li { margin: 4px 0; }
+        table {
+            border-collapse: collapse;
+            margin: 10px 0 18px;
+            width: 100%;
+        }
+        th {
+            background: #ecfdf5;
+            color: #065f46;
+            font-weight: 700;
+            text-align: left;
+        }
+        th, td {
+            border: 1px solid #d4d4d8;
+            padding: 8px;
+            vertical-align: top;
+        }
+        .card {
+            background: #fafafa;
+            border: 1px solid #d4d4d8;
+            border-radius: 8px;
+            margin: 12px 0;
+            padding: 14px;
+        }
+        .grid {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: 1fr 1fr;
+        }
+        .badge {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 999px;
+            color: #047857;
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            margin: 4px 5px 4px 0;
+            padding: 4px 8px;
+        }
+        .muted { color: #52525b; }
+        .page-break { page-break-before: always; }
+        code {
+            background: #f4f4f5;
+            border: 1px solid #e4e4e7;
+            border-radius: 5px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            padding: 2px 5px;
+        }
+    </style>
+</head>
+<body>
+    <section class="cover">
+        <p class="eyebrow">Panduan Operasional</p>
+        <h1>MBC CBT Online</h1>
+        <p style="font-size: 15px; margin-top: 16px; max-width: 620px;">
+            Panduan pemakaian aplikasi CBT MBC untuk admin dan siswa, termasuk alur pembuatan ujian,
+            input soal, token, pengerjaan ujian, koreksi esai, dan rekap nilai.
+        </p>
+    </section>
+
+    <div class="grid">
+        <div class="card">
+            <h3 style="margin-top:0;">Akses Admin</h3>
+            <p>URL: <code>/admin/login</code></p>
+            <p>Email demo: <code>admin@mbc.test</code></p>
+            <p>Password demo: <code>password</code></p>
+        </div>
+        <div class="card">
+            <h3 style="margin-top:0;">Akses Siswa</h3>
+            <p>URL: <code>/ujian</code></p>
+            <p>Token demo: <code>DEMO-TEST-2026</code></p>
+            <p>Token lain tersedia di menu admin Token.</p>
+        </div>
+    </div>
+
+    <h2>1. Ringkasan Aplikasi</h2>
+    <p>
+        MBC CBT Online adalah aplikasi tes berbasis Laravel Livewire untuk mengelola ujian online SD dan SMP.
+        Sistem memakai pembayaran manual: siswa menghubungi admin, admin memverifikasi pembayaran, lalu admin
+        memberikan token ujian satu kali pakai.
+    </p>
+    <p>Tipe soal MVP yang didukung:</p>
+    <span class="badge">Pilihan ganda teks</span>
+    <span class="badge">Pilihan ganda dengan gambar soal</span>
+    <span class="badge">Pilihan ganda dengan gambar opsi</span>
+    <span class="badge">Esai teks</span>
+    <span class="badge">Esai dengan gambar</span>
+    <span class="badge">Stimulus bacaan/gambar</span>
+
+    <h2>2. Alur Besar Sistem</h2>
+    <ol>
+        <li>Admin login ke dashboard.</li>
+        <li>Admin membuat paket ujian dan mengatur jadwal, durasi, status, serta aturan tampil hasil.</li>
+        <li>Admin menambahkan stimulus jika satu bacaan/gambar dipakai untuk beberapa soal.</li>
+        <li>Admin membuat soal pilihan ganda atau esai, termasuk gambar pada pertanyaan atau opsi jawaban.</li>
+        <li>Siswa melakukan pembayaran manual kepada admin.</li>
+        <li>Admin membuat token ujian dan memberikannya kepada siswa.</li>
+        <li>Siswa membuka portal ujian, memasukkan token, dan mengisi data diri.</li>
+        <li>Siswa mengerjakan ujian. Jawaban tersimpan otomatis dan ujian auto-submit saat waktu habis.</li>
+        <li>Sistem menghitung nilai pilihan ganda secara otomatis.</li>
+        <li>Admin menilai esai secara manual, lalu melihat rekap nilai dan detail jawaban.</li>
+    </ol>
+
+    <div class="page-break"></div>
+
+    <h2>3. Panduan Admin</h2>
+    <h3>3.1 Login Admin</h3>
+    <ol>
+        <li>Buka halaman <code>/admin/login</code>.</li>
+        <li>Masukkan email dan password admin.</li>
+        <li>Setelah berhasil, admin diarahkan ke dashboard.</li>
+    </ol>
+
+    <h3>3.2 Dashboard</h3>
+    <p>Dashboard menampilkan ringkasan operasional:</p>
+    <ul>
+        <li>Jumlah paket ujian.</li>
+        <li>Jumlah soal aktif.</li>
+        <li>Jumlah token dibuat.</li>
+        <li>Jumlah sesi siswa.</li>
+        <li>Jumlah esai yang menunggu koreksi.</li>
+        <li>Aktivitas ujian terbaru.</li>
+    </ul>
+
+    <h3>3.3 Membuat Paket Ujian</h3>
+    <ol>
+        <li>Buka menu <strong>Paket Ujian</strong>.</li>
+        <li>Isi nama ujian, jenjang, kelas, mata pelajaran, durasi, jadwal mulai, dan jadwal selesai.</li>
+        <li>Pilih status <strong>Aktif</strong> agar siswa bisa memakai token.</li>
+        <li>Aktifkan <strong>Tampilkan hasil ke siswa</strong> jika nilai boleh langsung terlihat setelah ujian.</li>
+        <li>Klik <strong>Simpan paket</strong>.</li>
+    </ol>
+
+    <h3>3.4 Membuat Stimulus</h3>
+    <p>
+        Stimulus digunakan untuk bacaan, data, grafik, tabel, atau gambar yang dipakai beberapa soal sekaligus.
+    </p>
+    <ol>
+        <li>Buka menu <strong>Soal</strong>.</li>
+        <li>Pilih paket ujian aktif untuk input soal.</li>
+        <li>Isi judul stimulus, tipe stimulus, dan konten bacaan atau upload gambar.</li>
+        <li>Klik <strong>Simpan stimulus</strong>.</li>
+    </ol>
+
+    <h3>3.5 Membuat Soal</h3>
+    <ol>
+        <li>Buka menu <strong>Soal</strong>.</li>
+        <li>Pilih nomor soal dan tipe soal: pilihan ganda atau esai.</li>
+        <li>Pilih stimulus jika soal memakai bacaan/gambar yang sama.</li>
+        <li>Tulis pertanyaan dan upload gambar soal jika dibutuhkan.</li>
+        <li>Untuk pilihan ganda, isi opsi A sampai E dan pilih kunci jawaban.</li>
+        <li>Upload gambar pada opsi jika jawaban berupa gambar.</li>
+        <li>Isi bobot nilai dan pembahasan opsional.</li>
+        <li>Klik <strong>Simpan soal</strong>.</li>
+    </ol>
+
+    <div class="page-break"></div>
+
+    <h3>3.6 Membuat Token</h3>
+    <ol>
+        <li>Buka menu <strong>Token</strong>.</li>
+        <li>Pilih paket ujian.</li>
+        <li>Isi jumlah token yang ingin dibuat.</li>
+        <li>Isi waktu kedaluwarsa jika diperlukan.</li>
+        <li>Klik <strong>Buat token</strong>.</li>
+        <li>Berikan token kepada siswa yang sudah membayar.</li>
+    </ol>
+    <p class="muted">
+        Catatan: token hanya bisa dipakai satu kali. Setelah siswa mulai ujian, token berubah menjadi in progress.
+        Setelah submit, token berubah menjadi used.
+    </p>
+
+    <h3>3.7 Melihat Rekap Nilai</h3>
+    <p>Buka menu <strong>Hasil</strong>. Admin dapat melihat:</p>
+    <ul>
+        <li>Total nilai.</li>
+        <li>Nilai pilihan ganda.</li>
+        <li>Nilai esai.</li>
+        <li>Jumlah benar, salah, dan kosong.</li>
+        <li>Durasi pengerjaan.</li>
+        <li>Waktu mulai dan selesai.</li>
+        <li>Status lulus atau belum lulus.</li>
+        <li>Detail jawaban per soal.</li>
+    </ul>
+
+    <h3>3.8 Menilai Esai</h3>
+    <ol>
+        <li>Buka menu <strong>Hasil</strong>.</li>
+        <li>Klik <strong>Lihat detail</strong> pada hasil siswa.</li>
+        <li>Cari baris soal bertipe esai.</li>
+        <li>Isi skor esai pada kolom skor.</li>
+        <li>Klik <strong>Simpan</strong>.</li>
+        <li>Total nilai akan diperbarui berdasarkan nilai pilihan ganda + nilai esai.</li>
+    </ol>
+
+    <h2>4. Panduan Siswa</h2>
+    <h3>4.1 Masuk Ujian</h3>
+    <ol>
+        <li>Buka halaman <code>/ujian</code>.</li>
+        <li>Masukkan token dari admin.</li>
+        <li>Isi nama lengkap, kelas, nomor HP, dan asal sekolah.</li>
+        <li>Klik <strong>Mulai ujian</strong>.</li>
+    </ol>
+
+    <h3>4.2 Mengerjakan Ujian</h3>
+    <ul>
+        <li>Timer muncul di bagian atas ruang ujian.</li>
+        <li>Siswa dapat berpindah soal menggunakan tombol sebelumnya, berikutnya, atau navigasi nomor soal.</li>
+        <li>Jawaban pilihan ganda tersimpan otomatis saat dipilih.</li>
+        <li>Jawaban esai tersimpan otomatis saat diketik.</li>
+        <li>Tombol ragu-ragu dapat dipakai untuk menandai soal.</li>
+        <li>Jika waktu habis, sistem melakukan auto-submit.</li>
+    </ul>
+
+    <h3>4.3 Selesai Ujian</h3>
+    <ol>
+        <li>Klik <strong>Submit</strong> jika sudah selesai.</li>
+        <li>Konfirmasi submit ujian.</li>
+        <li>Jika admin mengaktifkan hasil siswa, nilai akan tampil setelah submit.</li>
+        <li>Jika ada esai, nilai akhir menunggu koreksi admin.</li>
+    </ol>
+
+    <div class="page-break"></div>
+
+    <h2>5. Data Dummy Yang Tersedia</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Jenis Data</th>
+                <th>Isi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Akun admin</td>
+                <td><code>admin@mbc.test</code> / <code>password</code></td>
+            </tr>
+            <tr>
+                <td>Paket ujian</td>
+                <td>Try Out CBT SD Matematika, Try Out CBT SMP IPA, Tes Diagnostik SD Bahasa Indonesia</td>
+            </tr>
+            <tr>
+                <td>Soal</td>
+                <td>17 soal campuran pilihan ganda dan esai</td>
+            </tr>
+            <tr>
+                <td>Stimulus</td>
+                <td>5 stimulus bacaan/data</td>
+            </tr>
+            <tr>
+                <td>Token demo</td>
+                <td><code>DEMO-TEST-2026</code>, <code>SD-MTK-0001</code>, <code>SD-MTK-0002</code>, <code>SMP-IPA-0001</code>, <code>SMP-IPA-0002</code>, <code>SD-BINDO-0001</code>, <code>SD-BINDO-0002</code></td>
+            </tr>
+            <tr>
+                <td>Hasil dummy</td>
+                <td>2 hasil siswa untuk contoh dashboard dan rekap nilai</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>6. Tips Operasional</h2>
+    <ul>
+        <li>Pastikan status paket ujian adalah <strong>Aktif</strong> sebelum token diberikan ke siswa.</li>
+        <li>Gunakan stimulus untuk bacaan panjang agar soal lebih mudah dikelola.</li>
+        <li>Gunakan token berbeda untuk setiap siswa agar riwayat pengerjaan tidak bercampur.</li>
+        <li>Periksa menu Hasil setelah ujian selesai, terutama jika ada soal esai.</li>
+        <li>Jangan memberikan ulang token yang statusnya sudah used atau in progress.</li>
+    </ul>
+
+    <h2>7. Fitur Lanjutan Yang Disarankan</h2>
+    <ul>
+        <li>Export rekap nilai ke Excel.</li>
+        <li>Import soal massal dari Excel + ZIP gambar.</li>
+        <li>Ranking siswa per paket ujian.</li>
+        <li>Analisis nilai per mata pelajaran atau kategori soal.</li>
+        <li>Integrasi WhatsApp untuk pengiriman token.</li>
+        <li>Pembayaran otomatis dengan payment gateway.</li>
+    </ul>
+</body>
+</html>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="180" viewBox="0 0 260 180">
+  <rect width="260" height="180" rx="10" fill="#f8fafc"/>
+  <rect x="45" y="45" width="170" height="86" fill="#dcfce7" stroke="#047857" stroke-width="8"/>
+  <text x="130" y="168" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#064e3b">Persegi panjang</text>
+</svg>
