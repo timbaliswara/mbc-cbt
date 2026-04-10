@@ -242,8 +242,17 @@ new class extends Component
                                 <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Nomor {{ $question->order_number }} · {{ $question->isMultipleChoice() ? 'Pilihan ganda' : 'Esai' }}</p>
                                 @if ($question->stimulus)
                                     <div class="mt-3 rounded-md border border-emerald-100 bg-emerald-50/70 p-3 text-xs leading-5 text-emerald-950">
-                                        <p class="font-semibold">Stimulus</p>
-                                        <p class="mt-1">{{ $question->stimulus->title }}</p>
+                                        <p class="font-semibold uppercase tracking-wide text-emerald-700">Stimulus dari TIM MBC</p>
+                                        <p class="mt-1 font-semibold">{{ $question->stimulus->title }}</p>
+                                        @if ($question->stimulus->content)
+                                            <p class="mt-2 whitespace-pre-line text-zinc-700">{{ $question->stimulus->content }}</p>
+                                        @endif
+                                        @if ($question->stimulus->file_path)
+                                            <img src="{{ Storage::url($question->stimulus->file_path) }}" class="mt-2 max-h-36 rounded-md border border-emerald-100 bg-white object-contain" alt="Gambar stimulus">
+                                        @endif
+                                        @if ($question->stimulus->caption)
+                                            <p class="mt-2 text-emerald-800">{{ $question->stimulus->caption }}</p>
+                                        @endif
                                     </div>
                                 @endif
                                 <p class="mt-3 leading-6 text-zinc-800">{{ $question->question_text }}</p>

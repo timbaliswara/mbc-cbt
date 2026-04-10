@@ -222,10 +222,18 @@ new class extends Component
         <div class="grid gap-6 lg:grid-cols-[1fr_280px]">
             <section wire:key="question-panel-{{ $question->id }}" class="surface rounded-md p-6">
                 @if ($question->stimulus)
-                    <div class="mb-5 rounded-md border border-sky-200 bg-sky-50 p-4">
-                        <p class="text-sm font-semibold text-sky-950">{{ $question->stimulus->title }}</p>
-                        @if ($question->stimulus->content)<p class="mt-2 whitespace-pre-line text-sm leading-6 text-sky-900">{{ $question->stimulus->content }}</p>@endif
-                        @if ($question->stimulus->file_path)<img src="{{ Storage::url($question->stimulus->file_path) }}" class="mt-3 max-h-72 rounded-md border border-sky-200 object-contain">@endif
+                    <div class="mb-5 rounded-md border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Bacaan/gambar bersama dari TIM MBC</p>
+                        <h2 class="mt-2 text-base font-semibold text-emerald-950">{{ $question->stimulus->title }}</h2>
+                        @if ($question->stimulus->content)
+                            <p class="mt-3 whitespace-pre-line rounded-md border border-emerald-100 bg-white/80 p-4 text-sm leading-7 text-zinc-800">{{ $question->stimulus->content }}</p>
+                        @endif
+                        @if ($question->stimulus->file_path)
+                            <img src="{{ Storage::url($question->stimulus->file_path) }}" class="mt-3 max-h-96 rounded-md border border-emerald-200 bg-white object-contain" alt="Gambar stimulus">
+                        @endif
+                        @if ($question->stimulus->caption)
+                            <p class="mt-2 text-xs leading-5 text-emerald-800">{{ $question->stimulus->caption }}</p>
+                        @endif
                     </div>
                 @endif
 

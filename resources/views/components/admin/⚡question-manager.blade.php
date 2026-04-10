@@ -311,6 +311,21 @@ new class extends Component
                                     @if ($question->image_path)
                                         <img src="{{ Storage::url($question->image_path) }}" class="mt-3 max-h-40 rounded-md border border-zinc-200 object-contain">
                                     @endif
+                                    @if ($question->stimulus)
+                                        <div class="mt-3 rounded-md border border-emerald-100 bg-emerald-50/70 p-3 text-sm leading-6 text-zinc-700">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Stimulus dari TIM MBC</p>
+                                            <p class="mt-1 font-semibold text-emerald-950">{{ $question->stimulus->title }}</p>
+                                            @if ($question->stimulus->content)
+                                                <p class="mt-2 whitespace-pre-line">{{ $question->stimulus->content }}</p>
+                                            @endif
+                                            @if ($question->stimulus->file_path)
+                                                <img src="{{ Storage::url($question->stimulus->file_path) }}" class="mt-2 max-h-36 rounded-md border border-emerald-100 bg-white object-contain" alt="Gambar stimulus">
+                                            @endif
+                                            @if ($question->stimulus->caption)
+                                                <p class="mt-2 text-xs text-emerald-800">{{ $question->stimulus->caption }}</p>
+                                            @endif
+                                        </div>
+                                    @endif
                                     @if ($question->isMultipleChoice())
                                         <div class="mt-3 grid gap-2 sm:grid-cols-2">
                                             @foreach ($question->options as $option)

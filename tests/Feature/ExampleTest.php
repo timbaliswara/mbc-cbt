@@ -135,6 +135,33 @@ class ExampleTest extends TestCase
         ]);
     }
 
+    public function test_exam_room_shows_stimulus_content_for_linked_question(): void
+    {
+        $this->seed();
+
+        $exam = Exam::with('questions.stimulus')->where('status', 'active')->first();
+        $question = $exam->questions->first(fn (Question $question) => $question->stimulus_id !== null);
+        $student = Student::create(['name' => 'Stimulus Tester']);
+        $token = ExamToken::create([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id,
+            'token' => 'TEMP-STIMULUS-TEST',
+            'status' => 'in_progress',
+        ]);
+        $attempt = ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id,
+            'exam_token_id' => $token->id,
+            'started_at' => now(),
+            'status' => 'in_progress',
+        ]);
+
+        Livewire::test('student.exam-room', ['attempt' => $attempt])
+            ->assertSee('Bacaan/gambar bersama dari TIM MBC')
+            ->assertSee($question->stimulus->title)
+            ->assertSee(str($question->stimulus->content)->before("\n")->toString());
+    }
+
     public function test_question_edit_shows_existing_image_preview(): void
     {
         $this->seed();
