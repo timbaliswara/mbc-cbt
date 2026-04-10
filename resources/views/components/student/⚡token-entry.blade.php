@@ -12,6 +12,7 @@ new class extends Component
     public string $phone = '';
     public string $school = '';
     public string $grade = '';
+    public string $resultToken = '';
 
     public function start()
     {
@@ -49,6 +50,31 @@ new class extends Component
 
         return redirect()->route('student.exam', $attempt);
     }
+
+    public function checkResult()
+    {
+        $data = $this->validate([
+            'resultToken' => ['required', 'string'],
+        ]);
+
+        $token = ExamToken::with('attempt.result')->where('token', strtoupper(trim($data['resultToken'])))->first();
+
+        if (! $token || ! $token->attempt) {
+            $this->addError('resultToken', 'Token belum ditemukan. Cek lagi token dari TIM MBC.');
+            return;
+        }
+
+        if ($token->attempt->status === 'in_progress') {
+            return redirect()->route('student.exam', $token->attempt);
+        }
+
+        if ($token->attempt->status !== 'finished') {
+            $this->addError('resultToken', 'Hasil untuk token ini belum tersedia.');
+            return;
+        }
+
+        return redirect()->route('student.result', $token->attempt);
+    }
 };
 ?>
 
@@ -64,26 +90,38 @@ new class extends Component
         </div>
     </div>
 
-    <form wire:submit="start" class="surface rounded-md p-7 shadow-sm backdrop-blur">
-        <div class="rounded-md bg-zinc-950 p-5 text-white">
-            <p class="text-sm font-medium text-emerald-200">Halo, selamat datang di tes MBC</p>
-            <h2 class="mt-2 text-2xl font-semibold tracking-tight">Data peserta</h2>
-            <p class="mt-2 text-sm leading-6 text-zinc-300">Isi data dengan benar ya. Setelah ujian dimulai, token ini akan terkunci untuk satu sesi.</p>
-        </div>
-        <div class="mt-5 grid gap-4">
-            <div>
-                <label class="text-sm font-medium text-zinc-800">Token</label>
-                <input wire:model="token" class="premium-input mt-2 w-full rounded-md px-3 py-2.5 text-sm uppercase transition" placeholder="XXXX-XXXX-XXXX">
-                @error('token') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+    <div class="space-y-4">
+        <form wire:submit="start" class="surface rounded-md p-7 shadow-sm backdrop-blur">
+            <div class="rounded-md bg-zinc-950 p-5 text-white">
+                <p class="text-sm font-medium text-emerald-200">Halo, selamat datang di tes MBC</p>
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight">Data peserta</h2>
+                <p class="mt-2 text-sm leading-6 text-zinc-300">Isi data dengan benar ya. Setelah ujian dimulai, token ini akan terkunci untuk satu sesi.</p>
             </div>
-            <input wire:model="name" placeholder="Nama lengkap" class="premium-input rounded-md px-3 py-2.5 text-sm">
-            <div class="grid gap-4 sm:grid-cols-2">
-                <input wire:model="grade" placeholder="Kelas" class="premium-input rounded-md px-3 py-2.5 text-sm">
-                <input wire:model="phone" placeholder="Nomor HP" class="premium-input rounded-md px-3 py-2.5 text-sm">
+            <div class="mt-5 grid gap-4">
+                <div>
+                    <label class="text-sm font-medium text-zinc-800">Token</label>
+                    <input wire:model="token" class="premium-input mt-2 w-full rounded-md px-3 py-2.5 text-sm uppercase transition" placeholder="XXXX-XXXX-XXXX">
+                    @error('token') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <input wire:model="name" placeholder="Nama lengkap" class="premium-input rounded-md px-3 py-2.5 text-sm">
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <input wire:model="grade" placeholder="Kelas" class="premium-input rounded-md px-3 py-2.5 text-sm">
+                    <input wire:model="phone" placeholder="Nomor HP" class="premium-input rounded-md px-3 py-2.5 text-sm">
+                </div>
+                <input wire:model="school" placeholder="Asal sekolah" class="premium-input rounded-md px-3 py-2.5 text-sm">
+                @error('name') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+                <button class="premium-button rounded-md px-4 py-2.5 text-sm font-semibold text-white hover:brightness-105">Mulai ujian</button>
             </div>
-            <input wire:model="school" placeholder="Asal sekolah" class="premium-input rounded-md px-3 py-2.5 text-sm">
-            @error('name') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
-            <button class="premium-button rounded-md px-4 py-2.5 text-sm font-semibold text-white hover:brightness-105">Mulai ujian</button>
-        </div>
-    </form>
+        </form>
+
+        <form wire:submit="checkResult" class="surface rounded-md border border-emerald-100 p-5 shadow-sm">
+            <p class="text-sm font-semibold text-zinc-950">Sudah pernah mengerjakan?</p>
+            <p class="mt-2 text-sm leading-6 text-zinc-600">Masukkan token yang sama untuk melihat hasil ujian. Kalau ujian belum selesai, kamu akan diarahkan kembali ke ruang ujian.</p>
+            <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+                <input wire:model="resultToken" class="premium-input w-full rounded-md px-3 py-2.5 text-sm uppercase transition" placeholder="Token yang sudah dipakai">
+                <button class="rounded-md border border-emerald-200 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50">Cek hasil</button>
+            </div>
+            @error('resultToken') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+        </form>
+    </div>
 </section>

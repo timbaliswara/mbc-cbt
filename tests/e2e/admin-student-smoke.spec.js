@@ -62,6 +62,8 @@ test.describe('MBC CBT smoke flow', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${baseURL}/ujian`);
     await expect(page.getByText('Masukkan token dari TIM MBC')).toBeVisible();
+    await expect(page.getByText('Sudah pernah mengerjakan?')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Cek hasil' })).toBeVisible();
     await page.getByPlaceholder('XXXX-XXXX-XXXX').fill(token);
     await page.getByPlaceholder('Nama lengkap').fill(studentName);
     await page.getByPlaceholder('Kelas').fill('6');

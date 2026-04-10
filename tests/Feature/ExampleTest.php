@@ -162,6 +162,45 @@ class ExampleTest extends TestCase
             ->assertSee(str($question->stimulus->content)->before("\n")->toString());
     }
 
+    public function test_student_can_reopen_finished_result_from_token_portal(): void
+    {
+        $this->seed();
+
+        $attempt = ExamAttempt::where('status', 'finished')->with('token')->firstOrFail();
+
+        Livewire::test('student.token-entry')
+            ->set('resultToken', $attempt->token->token)
+            ->call('checkResult')
+            ->assertRedirect(route('student.result', $attempt));
+    }
+
+    public function test_student_can_resume_in_progress_exam_from_token_portal(): void
+    {
+        $this->seed();
+
+        $exam = Exam::query()->where('status', 'active')->firstOrFail();
+        $student = Student::create(['name' => 'Resume Tester']);
+        $token = ExamToken::create([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id,
+            'token' => 'TEMP-RESUME-TEST',
+            'status' => 'in_progress',
+            'used_at' => now(),
+        ]);
+        $attempt = ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id,
+            'exam_token_id' => $token->id,
+            'started_at' => now(),
+            'status' => 'in_progress',
+        ]);
+
+        Livewire::test('student.token-entry')
+            ->set('resultToken', $token->token)
+            ->call('checkResult')
+            ->assertRedirect(route('student.exam', $attempt));
+    }
+
     public function test_question_edit_shows_existing_image_preview(): void
     {
         $this->seed();
