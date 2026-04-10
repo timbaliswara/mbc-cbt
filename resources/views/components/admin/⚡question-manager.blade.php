@@ -183,7 +183,7 @@ new class extends Component
     <div class="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
         <div class="grid gap-4 lg:grid-cols-4">
             <div class="lg:col-span-2">
-                <label class="text-sm font-medium text-zinc-800">Paket ujian aktif untuk input soal</label>
+                <label class="text-sm font-medium text-zinc-800">Paket yang sedang disiapkan TIM MBC</label>
                 <select wire:model.live="exam_id" class="mt-2 w-full rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
                     @foreach ($exams as $exam)
                         <option value="{{ $exam->id }}">{{ $exam->title }}</option>
@@ -206,7 +206,7 @@ new class extends Component
             <div class="space-y-6">
                 <form wire:submit="saveStimulus" class="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
                     <h2 class="text-base font-semibold text-zinc-950">Materi bersama / stimulus</h2>
-                    <p class="mt-2 text-sm leading-6 text-zinc-600">Gunakan jika satu bacaan, gambar, tabel, grafik, atau denah dipakai untuk beberapa soal sekaligus. Jika soal berdiri sendiri, lewati bagian ini dan pilih <span class="font-medium text-zinc-950">Tanpa stimulus</span> saat input soal.</p>
+                    <p class="mt-2 text-sm leading-6 text-zinc-600">Bagian ini dipakai kalau TIM MBC punya satu bacaan, gambar, tabel, grafik, atau denah untuk beberapa soal sekaligus. Kalau soalnya berdiri sendiri, lewati bagian ini dan pilih <span class="font-medium text-zinc-950">Tanpa stimulus</span>.</p>
                     <div class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-emerald-900">
                         Contoh: satu bacaan Bahasa Indonesia untuk soal nomor 1-5, satu gambar rantai makanan untuk beberapa soal IPA, atau satu denah taman untuk beberapa soal Matematika.
                     </div>
@@ -228,7 +228,7 @@ new class extends Component
                     class="rounded-md border border-zinc-200 bg-white p-5 shadow-sm"
                 >
                     <div class="flex items-center justify-between gap-3">
-                        <h2 class="text-base font-semibold text-zinc-950">{{ $editingId ? 'Edit soal' : 'Input soal' }}</h2>
+                        <h2 class="text-base font-semibold text-zinc-950">{{ $editingId ? 'Edit soal' : 'Tulis soal baru' }}</h2>
                         @if ($editingId)
                             <button type="button" wire:click="resetQuestionForm" class="rounded-md border border-zinc-200 px-3 py-2 text-sm font-medium">Batal</button>
                         @endif
@@ -293,7 +293,7 @@ new class extends Component
             <div class="rounded-md border border-zinc-200 bg-white shadow-sm">
                 <div class="border-b border-zinc-200 p-5">
                     <h2 class="text-base font-semibold text-zinc-950">Daftar soal</h2>
-                    <p class="mt-1 text-sm text-zinc-500">MVP mendukung pilihan ganda/esai, gambar soal, gambar opsi, dan stimulus.</p>
+                    <p class="mt-1 text-sm text-zinc-500">TIM MBC bisa membuat pilihan ganda, esai, soal bergambar, opsi bergambar, dan stimulus.</p>
                 </div>
                 <div class="divide-y divide-zinc-100">
                     @forelse ($questions as $question)

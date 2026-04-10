@@ -126,7 +126,7 @@ class ExampleTest extends TestCase
         Livewire::test('student.exam-room', ['attempt' => $attempt])
             ->set('answers.'.$question->id, $option->id)
             ->call('finish')
-            ->assertSee('Belum bisa submit');
+            ->assertSee('Masih ada jawaban kosong');
 
         $this->assertDatabaseHas('exam_attempts', [
             'id' => $attempt->id,

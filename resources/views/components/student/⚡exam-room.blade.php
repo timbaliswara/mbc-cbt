@@ -284,19 +284,19 @@ new class extends Component
                         <button wire:click="goTo({{ $index }})" class="aspect-square rounded-md text-sm font-semibold {{ $index === $currentIndex ? 'bg-emerald-700 text-white' : (filled($answers[$item->id] ?? null) ? 'bg-emerald-50 text-emerald-800' : 'bg-zinc-100 text-zinc-600') }}">{{ $index + 1 }}</button>
                     @endforeach
                 </div>
-                <div class="mt-5 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Jawaban disimpan saat pindah soal atau submit, supaya koneksi lebih ringan.</div>
+                <div class="mt-5 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Jawaban disimpan saat kamu pindah soal atau mengumpulkan ujian, supaya halaman tetap ringan.</div>
 
                 @if ($submitWarning)
                     <div class="mt-5 rounded-md border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800">
-                        <p class="font-semibold text-red-950">Belum bisa submit</p>
+                        <p class="font-semibold text-red-950">Masih ada jawaban kosong</p>
                         <p class="mt-1">{{ $submitWarning }}</p>
                     </div>
                 @endif
 
                 <div class="mt-5 rounded-md border border-emerald-200 bg-emerald-50 p-4">
-                    <p class="text-sm font-semibold text-emerald-950">Selesai mengerjakan?</p>
-                    <p class="mt-2 text-sm leading-6 text-emerald-900">Tekan tombol ini hanya kalau semua jawaban sudah terisi dan siap dikumpulkan.</p>
-                    <button wire:click="finish" wire:confirm="Submit ujian sekarang? Pastikan semua jawaban sudah benar." class="premium-button mt-4 w-full rounded-md px-4 py-3 text-sm font-semibold text-white hover:brightness-105">Submit ujian</button>
+                    <p class="text-sm font-semibold text-emerald-950">Sudah siap dikumpulkan?</p>
+                    <p class="mt-2 text-sm leading-6 text-emerald-900">Kumpulkan hanya setelah semua jawaban terisi. TIM MBC akan menerima hasilmu setelah tombol ini ditekan.</p>
+                    <button wire:click="finish" wire:confirm="Kumpulkan ujian sekarang? Pastikan semua jawaban sudah terisi." class="premium-button mt-4 w-full rounded-md px-4 py-3 text-sm font-semibold text-white hover:brightness-105">Kumpulkan ujian</button>
                 </div>
             </aside>
         </div>

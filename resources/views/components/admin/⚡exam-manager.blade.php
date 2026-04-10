@@ -106,7 +106,7 @@ new class extends Component
         <div class="flex items-start justify-between gap-4">
             <div>
                 <h2 class="text-base font-semibold text-zinc-950">{{ $editingId ? 'Edit paket ujian' : 'Buat paket ujian' }}</h2>
-                <p class="mt-1 text-sm text-zinc-500">Atur jadwal, durasi, dan aturan hasil.</p>
+                <p class="mt-1 text-sm text-zinc-500">TIM MBC bisa mengatur jadwal, durasi, dan aturan hasil dari sini.</p>
             </div>
             @if ($editingId)
                 <button type="button" wire:click="resetForm" class="rounded-md border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700">Batal</button>
@@ -179,7 +179,7 @@ new class extends Component
     <div class="rounded-md border border-zinc-200 bg-white shadow-sm">
         <div class="border-b border-zinc-200 p-5">
             <h2 class="text-base font-semibold text-zinc-950">Daftar paket</h2>
-            <p class="mt-1 text-sm text-zinc-500">Pilih paket untuk diedit atau digunakan di modul soal/token.</p>
+            <p class="mt-1 text-sm text-zinc-500">Pilih paket yang ingin disunting, diisi soal, atau dibuatkan tokennya.</p>
         </div>
         <div class="divide-y divide-zinc-100">
             @forelse ($exams as $exam)

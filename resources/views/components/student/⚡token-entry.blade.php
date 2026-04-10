@@ -55,20 +55,20 @@ new class extends Component
 <section class="mx-auto grid min-h-[calc(100vh-73px)] max-w-6xl items-center gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8">
     <div>
         <div class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800">Portal Siswa</div>
-        <h1 class="mt-5 max-w-xl text-5xl font-semibold tracking-tight text-zinc-950">Masukkan token, fokus, lalu mulai tes.</h1>
-        <p class="mt-5 max-w-xl text-base leading-7 text-zinc-600">Token diberikan admin setelah pembayaran dikonfirmasi. Siapkan koneksi internet stabil sebelum menekan mulai.</p>
+        <h1 class="mt-5 max-w-xl text-5xl font-semibold tracking-tight text-zinc-950">Masukkan token dari TIM MBC, lalu mulai saat kamu sudah siap.</h1>
+        <p class="mt-5 max-w-xl text-base leading-7 text-zinc-600">Token diberikan setelah pembayaran dikonfirmasi oleh TIM MBC. Pastikan koneksi internet stabil dan data diri sudah benar sebelum mulai.</p>
         <div class="mt-8 grid gap-3 sm:grid-cols-3">
-            <div class="surface rounded-md p-4"><p class="text-sm font-semibold text-zinc-950">Timer</p><p class="mt-1 text-sm text-zinc-500">Mulai saat masuk</p></div>
-            <div class="surface rounded-md p-4"><p class="text-sm font-semibold text-zinc-950">Auto-submit</p><p class="mt-1 text-sm text-zinc-500">Saat waktu habis</p></div>
-            <div class="surface rounded-md p-4"><p class="text-sm font-semibold text-zinc-950">Media</p><p class="mt-1 text-sm text-zinc-500">Soal bergambar</p></div>
+            <div class="surface rounded-md p-4"><p class="text-sm font-semibold text-zinc-950">Timer</p><p class="mt-1 text-sm text-zinc-500">Berjalan saat ujian dimulai</p></div>
+            <div class="surface rounded-md p-4"><p class="text-sm font-semibold text-zinc-950">Auto-submit</p><p class="mt-1 text-sm text-zinc-500">Otomatis saat waktu habis</p></div>
+            <div class="surface rounded-md p-4"><p class="text-sm font-semibold text-zinc-950">Media</p><p class="mt-1 text-sm text-zinc-500">Soal bisa memakai gambar</p></div>
         </div>
     </div>
 
     <form wire:submit="start" class="surface rounded-md p-7 shadow-sm backdrop-blur">
         <div class="rounded-md bg-zinc-950 p-5 text-white">
-            <p class="text-sm font-medium text-emerald-200">Siap mengikuti ujian</p>
+            <p class="text-sm font-medium text-emerald-200">Halo, selamat datang di tes MBC</p>
             <h2 class="mt-2 text-2xl font-semibold tracking-tight">Data peserta</h2>
-            <p class="mt-2 text-sm leading-6 text-zinc-300">Pastikan data benar sebelum mulai. Token akan terkunci untuk satu sesi.</p>
+            <p class="mt-2 text-sm leading-6 text-zinc-300">Isi data dengan benar ya. Setelah ujian dimulai, token ini akan terkunci untuk satu sesi.</p>
         </div>
         <div class="mt-5 grid gap-4">
             <div>

@@ -33,13 +33,13 @@ new class extends Component
             <div class="flex h-11 w-11 items-center justify-center rounded-md bg-white text-sm font-bold text-emerald-800 shadow-xl shadow-emerald-950/20">CBT</div>
             <div>
                 <p class="text-sm font-semibold text-white">MBC</p>
-                <p class="text-xs text-emerald-50/70">Laravel Livewire</p>
+                <p class="text-xs text-emerald-50/70">Dibuat oleh TIM MBC</p>
             </div>
         </div>
         <div class="max-w-xl">
-            <p class="mb-4 text-sm font-medium uppercase tracking-[0.16em] text-emerald-50/80">Admin Console</p>
-            <h1 class="text-5xl font-semibold tracking-tight text-white">Kelola CBT MBC dengan ritme yang rapi.</h1>
-            <p class="mt-5 max-w-lg text-base leading-7 text-emerald-50/78">Paket ujian, soal bergambar, stimulus bacaan, token sekali pakai, koreksi esai, dan rekap detail dalam satu ruang kerja.</p>
+            <p class="mb-4 text-sm font-medium uppercase tracking-[0.16em] text-emerald-50/80">Ruang Kerja TIM MBC</p>
+            <h1 class="text-5xl font-semibold tracking-tight text-white">Tes online yang TIM MBC siapkan untuk berjalan lebih tenang.</h1>
+            <p class="mt-5 max-w-lg text-base leading-7 text-emerald-50/78">Atur paket ujian, soal bergambar, token peserta, koreksi esai, sampai rekap nilai dari satu tempat yang familiar untuk tim.</p>
         </div>
         <div class="grid grid-cols-3 gap-3 text-sm">
             <div class="rounded-md border border-white/15 bg-white/10 p-4 backdrop-blur">
@@ -52,7 +52,7 @@ new class extends Component
             </div>
             <div class="rounded-md border border-white/15 bg-white/10 p-4 backdrop-blur">
                 <p class="font-semibold text-white">Nilai</p>
-                <p class="mt-1 text-emerald-50/70">Rekap detail</p>
+                <p class="mt-1 text-emerald-50/70">Siap dibaca tim</p>
             </div>
         </div>
     </section>
@@ -61,8 +61,8 @@ new class extends Component
         <div class="surface w-full max-w-md rounded-md p-7 backdrop-blur">
             <div>
                 <p class="text-sm font-medium uppercase tracking-[0.16em] text-emerald-700">Login Admin</p>
-                <h2 class="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">Masuk ke dashboard</h2>
-                <p class="mt-2 text-sm text-zinc-500">Gunakan akun admin yang dibuat dari seeder.</p>
+                <h2 class="mt-2 text-3xl font-semibold tracking-tight text-zinc-950">Masuk ke ruang admin</h2>
+                <p class="mt-2 text-sm text-zinc-500">Masuk sebagai admin TIM MBC untuk menyiapkan ujian dan memantau hasil peserta.</p>
             </div>
 
             <form wire:submit="login" class="mt-6 space-y-4">
@@ -80,7 +80,7 @@ new class extends Component
             </form>
 
             <div class="mt-5 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-                Demo: admin@mbc.test / password
+                Akun awal TIM MBC: admin@mbc.test / password
             </div>
         </div>
     </section>

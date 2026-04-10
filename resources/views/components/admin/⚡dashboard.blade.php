@@ -27,9 +27,9 @@ new class extends Component
     <section class="hero-panel rounded-md p-6 shadow-2xl shadow-emerald-950/10">
         <div class="flex flex-wrap items-end justify-between gap-6">
             <div class="max-w-2xl">
-                <p class="text-sm font-medium uppercase tracking-[0.16em] text-emerald-50/75">Overview</p>
-                <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">Operasional CBT hari ini dalam satu layar.</h2>
-                <p class="mt-3 text-sm leading-6 text-emerald-50/75">Pantau paket aktif, token yang sudah dibuat, sesi siswa, dan antrean koreksi esai tanpa berpindah konteks.</p>
+                <p class="text-sm font-medium uppercase tracking-[0.16em] text-emerald-50/75">Ruang Pantau TIM MBC</p>
+                <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">Semua aktivitas tes hari ini ada di sini.</h2>
+                <p class="mt-3 text-sm leading-6 text-emerald-50/75">TIM MBC bisa melihat paket aktif, token, sesi peserta, dan antrean koreksi esai tanpa perlu pindah-pindah halaman terlalu sering.</p>
             </div>
             <a href="{{ route('admin.questions') }}" class="rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-50">Kelola soal</a>
         </div>
@@ -57,7 +57,7 @@ new class extends Component
         <div class="surface overflow-hidden rounded-md">
             <div class="border-b border-zinc-200 p-5">
                 <h2 class="text-base font-semibold text-zinc-950">Aktivitas terbaru</h2>
-                <p class="mt-1 text-sm text-zinc-500">Sesi ujian yang baru berjalan atau selesai.</p>
+                <p class="mt-1 text-sm text-zinc-500">Sesi peserta yang baru mulai, sedang berjalan, atau sudah selesai.</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
@@ -86,11 +86,11 @@ new class extends Component
         </div>
 
         <div class="surface rounded-md p-5">
-            <h2 class="text-base font-semibold text-zinc-950">Langkah cepat</h2>
+            <h2 class="text-base font-semibold text-zinc-950">Alur kerja TIM MBC</h2>
             <div class="mt-4 space-y-3">
                 <a href="{{ route('admin.exams') }}" class="surface-muted block rounded-md p-4 text-sm font-medium text-zinc-700 transition hover:border-emerald-200 hover:text-emerald-800">1. Buat paket ujian</a>
                 <a href="{{ route('admin.questions') }}" class="surface-muted block rounded-md p-4 text-sm font-medium text-zinc-700 transition hover:border-emerald-200 hover:text-emerald-800">2. Isi soal dan stimulus</a>
-                <a href="{{ route('admin.tokens') }}" class="surface-muted block rounded-md p-4 text-sm font-medium text-zinc-700 transition hover:border-emerald-200 hover:text-emerald-800">3. Generate token siswa</a>
+                <a href="{{ route('admin.tokens') }}" class="surface-muted block rounded-md p-4 text-sm font-medium text-zinc-700 transition hover:border-emerald-200 hover:text-emerald-800">3. Buat token peserta</a>
                 <a href="{{ route('admin.results') }}" class="surface-muted block rounded-md p-4 text-sm font-medium text-zinc-700 transition hover:border-emerald-200 hover:text-emerald-800">4. Cek hasil dan esai</a>
             </div>
         </div>

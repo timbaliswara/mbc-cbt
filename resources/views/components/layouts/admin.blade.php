@@ -18,7 +18,7 @@
                         <div class="flex h-11 w-11 items-center justify-center rounded-md bg-white text-sm font-bold text-emerald-800 shadow-lg shadow-emerald-950/20 ring-1 ring-white/50">CBT</div>
                         <div>
                             <p class="text-sm font-semibold text-white">MBC</p>
-                            <p class="text-xs text-emerald-50/75">Command Center</p>
+                            <p class="text-xs text-emerald-50/75">Ruang kerja TIM MBC</p>
                         </div>
                     </div>
                 </div>
@@ -32,8 +32,8 @@
                     @endforeach
                 </nav>
                 <div class="mx-4 mb-4 rounded-md border border-white/15 bg-white/10 p-4 backdrop-blur">
-                    <p class="text-xs font-medium uppercase tracking-[0.16em] text-emerald-50/80">MVP Ready</p>
-                    <p class="mt-2 text-sm leading-6 text-emerald-50/75">Token manual, soal bergambar, stimulus, esai, dan rekap detail.</p>
+                    <p class="text-xs font-medium uppercase tracking-[0.16em] text-emerald-50/80">Dikelola TIM MBC</p>
+                    <p class="mt-2 text-sm leading-6 text-emerald-50/75">Token manual, soal bergambar, stimulus, esai, dan rekap nilai disiapkan dalam satu alur.</p>
                 </div>
                 <div class="border-t border-white/10 p-4">
                     <form method="POST" action="{{ route('logout') }}">
@@ -48,7 +48,7 @@
             <header class="sticky top-0 z-20 border-b border-white/60 bg-white/75 backdrop-blur-xl">
                 <div class="flex min-h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
                     <div>
-                        <p class="text-xs font-medium uppercase tracking-[0.16em] text-emerald-700">CBT MBC</p>
+                        <p class="text-xs font-medium uppercase tracking-[0.16em] text-emerald-700">Aplikasi TIM MBC</p>
                         <h1 class="mt-1 text-2xl font-semibold tracking-tight text-zinc-950">{{ $heading ?? 'Dashboard' }}</h1>
                     </div>
                     <a href="{{ route('student.token') }}" class="premium-button rounded-md px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-105">Portal Siswa</a>

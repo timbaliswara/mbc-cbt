@@ -53,8 +53,8 @@ new class extends Component
 
 <div class="grid gap-6 xl:grid-cols-[0.7fr_1.3fr]">
     <form wire:submit="generate" class="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
-        <h2 class="text-base font-semibold text-zinc-950">Generate token</h2>
-        <p class="mt-1 text-sm text-zinc-500">Token diberikan setelah pembayaran manual dikonfirmasi admin.</p>
+        <h2 class="text-base font-semibold text-zinc-950">Buat token peserta</h2>
+        <p class="mt-1 text-sm text-zinc-500">Token diberikan setelah pembayaran manual dikonfirmasi oleh TIM MBC.</p>
         @if (session('message'))
             <div class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{{ session('message') }}</div>
         @endif
@@ -81,7 +81,7 @@ new class extends Component
     <div class="rounded-md border border-zinc-200 bg-white shadow-sm">
         <div class="border-b border-zinc-200 p-5">
             <h2 class="text-base font-semibold text-zinc-950">Daftar token</h2>
-            <p class="mt-1 text-sm text-zinc-500">Token terbaru ditampilkan di atas.</p>
+            <p class="mt-1 text-sm text-zinc-500">Token terbaru ada di atas agar mudah dibagikan oleh TIM MBC.</p>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">

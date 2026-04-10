@@ -13,7 +13,7 @@ async function assertNoPageErrors(page) {
 
 async function loginAdmin(page) {
   await page.goto(`${baseURL}/admin/login`);
-  await expect(page.getByText('Masuk ke dashboard')).toBeVisible();
+  await expect(page.getByText('Masuk ke ruang admin')).toBeVisible();
   await page.locator('input[type="email"]').fill('admin@mbc.test');
   await page.locator('input[type="password"]').fill('password');
   await page.getByRole('button', { name: 'Masuk' }).click();
@@ -50,7 +50,7 @@ test.describe('MBC CBT smoke flow', () => {
 
       await page.goto(`${baseURL}/admin/questions`);
       await page.getByRole('button', { name: 'Edit' }).first().click();
-      await expect(page.getByText(/Edit soal|Input soal/)).toBeVisible();
+      await expect(page.getByText(/Edit soal|Tulis soal baru/)).toBeVisible();
       await page.screenshot({ path: `test-results/admin-questions-${viewport.name}.png`, fullPage: true });
       await page.close();
     }
@@ -61,7 +61,7 @@ test.describe('MBC CBT smoke flow', () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${baseURL}/ujian`);
-    await expect(page.getByText('Masukkan token')).toBeVisible();
+    await expect(page.getByText('Masukkan token dari TIM MBC')).toBeVisible();
     await page.getByPlaceholder('XXXX-XXXX-XXXX').fill(token);
     await page.getByPlaceholder('Nama lengkap').fill(studentName);
     await page.getByPlaceholder('Kelas').fill('6');
@@ -77,8 +77,8 @@ test.describe('MBC CBT smoke flow', () => {
     await page.getByText('C. 23').click();
     await assertNoPageErrors(page);
     page.once('dialog', async (dialog) => dialog.accept());
-    await page.getByRole('button', { name: 'Submit ujian' }).click();
-    await expect(page.getByText('Belum bisa submit')).toBeVisible();
+    await page.getByRole('button', { name: 'Kumpulkan ujian' }).click();
+    await expect(page.getByText('Masih ada jawaban kosong')).toBeVisible();
     await expect(page.getByText(/Masih ada .* soal kosong/)).toBeVisible();
     await assertNoPageErrors(page);
     await page.screenshot({ path: 'test-results/student-submit-warning-mobile.png', fullPage: true });

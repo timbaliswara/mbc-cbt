@@ -52,13 +52,13 @@ new class extends Component
     <section class="hero-panel rounded-md p-6 shadow-2xl shadow-emerald-950/10">
         <div class="flex flex-wrap items-end justify-between gap-6">
             <div class="max-w-3xl">
-                <p class="text-sm font-medium uppercase tracking-[0.16em] text-emerald-50/75">Rekap Nilai</p>
-                <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">Daftar hasil ujian peserta.</h2>
-                <p class="mt-3 text-sm leading-6 text-emerald-50/75">Halaman ini hanya memuat ringkasan agar cepat. Detail jawaban per soal dibuka di halaman terpisah.</p>
+                <p class="text-sm font-medium uppercase tracking-[0.16em] text-emerald-50/75">Rekap Nilai TIM MBC</p>
+                <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">Hasil peserta dibuat ringkas agar mudah dibaca.</h2>
+                <p class="mt-3 text-sm leading-6 text-emerald-50/75">Daftar ini sengaja dibuat ringan. Kalau TIM MBC perlu melihat jawaban per soal, buka halaman detail masing-masing peserta.</p>
             </div>
             <div class="rounded-md border border-white/15 bg-white/10 p-4 text-sm text-emerald-50/80 backdrop-blur">
                 <p class="font-semibold text-white">{{ $attempts->count() }} data tampil</p>
-                <p class="mt-1">Maksimal 50 data terbaru</p>
+                <p class="mt-1">Menampilkan 50 data terbaru</p>
             </div>
         </div>
     </section>
@@ -76,7 +76,7 @@ new class extends Component
     <div class="surface overflow-hidden rounded-md">
         <div class="border-b border-zinc-200 p-5">
             <h2 class="text-base font-semibold text-zinc-950">Ringkasan hasil</h2>
-            <p class="mt-1 text-sm text-zinc-500">Klik detail untuk melihat jawaban, kunci, status benar/salah, dan koreksi esai.</p>
+            <p class="mt-1 text-sm text-zinc-500">Buka detail untuk melihat jawaban, kunci, status benar/salah, dan koreksi esai.</p>
         </div>
 
         <div class="overflow-x-auto">
