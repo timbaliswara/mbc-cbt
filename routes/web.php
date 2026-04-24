@@ -2,9 +2,11 @@
 
 use App\Models\ExamAttempt;
 use App\Support\ExamScoring;
+use App\Support\QuestionImportTemplateExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Maatwebsite\Excel\Facades\Excel;
 
 Route::get('/', function () {
     return redirect()->route('student.token');
@@ -24,6 +26,13 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', fn () => view('pages.admin-dashboard'))->name('dashboard');
     Route::get('/exams', fn () => view('pages.admin-exams'))->name('exams');
     Route::get('/questions', fn () => view('pages.admin-questions'))->name('questions');
+    Route::get('/questions/import', fn () => view('pages.admin-question-import'))->name('questions.import');
+    Route::get('/questions/import-template', fn () => Excel::download(new QuestionImportTemplateExport, 'template-import-soal-mbc.xlsx'))->name('questions.import.template');
+    Route::get('/questions/import-sample', fn () => response()->download(
+        base_path('resources/examples/import-soal-ips-sd-10.csv'),
+        'contoh-import-soal-ips-sd-10.csv',
+        ['Content-Type' => 'text/csv; charset=UTF-8']
+    ))->name('questions.import.sample');
     Route::get('/tokens', fn () => view('pages.admin-tokens'))->name('tokens');
     Route::get('/results', fn () => view('pages.admin-results'))->name('results');
     Route::get('/results-export', function () {

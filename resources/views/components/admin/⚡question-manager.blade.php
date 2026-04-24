@@ -352,6 +352,10 @@ new class extends Component
         <div class="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{{ session('message') }}</div>
     @endif
 
+    <div class="flex justify-end">
+        <a href="{{ route('admin.questions.import') }}" class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100">Buka import soal Excel</a>
+    </div>
+
     <div class="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
         <div class="grid gap-4 lg:grid-cols-4">
             <div class="lg:col-span-2">

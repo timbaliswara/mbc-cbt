@@ -3,6 +3,7 @@
         ['label' => 'Dashboard', 'url' => route('admin.dashboard'), 'active' => request()->routeIs('admin.dashboard')],
         ['label' => 'Paket Ujian', 'url' => route('admin.exams'), 'active' => request()->routeIs('admin.exams')],
         ['label' => 'Soal', 'url' => route('admin.questions'), 'active' => request()->routeIs('admin.questions')],
+        ['label' => 'Import Soal', 'url' => route('admin.questions.import'), 'active' => request()->routeIs('admin.questions.import')],
         ['label' => 'Token', 'url' => route('admin.tokens'), 'active' => request()->routeIs('admin.tokens')],
         ['label' => 'Hasil', 'url' => route('admin.results'), 'active' => request()->routeIs('admin.results')],
         ['label' => 'Panduan', 'url' => route('admin.guide'), 'active' => request()->routeIs('admin.guide')],

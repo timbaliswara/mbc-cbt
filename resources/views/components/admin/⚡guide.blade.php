@@ -64,7 +64,7 @@ new class extends Component
                     ['title' => '1. Login admin', 'body' => 'Buka /admin/login, lalu masuk dengan akun admin TIM MBC. Setelah itu admin akan diarahkan ke ruang pantau.'],
                     ['title' => '2. Buat paket ujian', 'body' => 'Masuk ke menu Paket Ujian. Isi nama ujian, jenjang, kelas, mapel, jadwal, durasi, passing grade, dan status. Pilih Aktif jika paket sudah siap dipakai peserta.'],
                     ['title' => '3. Siapkan stimulus', 'body' => 'Masuk ke menu Soal. Pilih paket ujian, lalu tambahkan stimulus jika ada bacaan, grafik, tabel, atau gambar yang dipakai untuk beberapa soal.'],
-                    ['title' => '4. Input soal', 'body' => 'Pilih tipe pilihan ganda atau esai. Tulis pertanyaan, unggah gambar jika perlu, isi opsi A-E, pilih kunci jawaban, dan tentukan bobot nilai.'],
+                    ['title' => '4. Input atau import soal', 'body' => 'Masuk ke menu Soal jika ingin menulis manual, atau buka menu Import Soal jika bank soal sudah disiapkan dalam Excel. Template import bisa diunduh langsung dari halaman itu.'],
                     ['title' => '5. Buat token peserta', 'body' => 'Masuk ke menu Token. Pilih paket ujian, isi jumlah token, atur kedaluwarsa bila perlu, lalu berikan token ke peserta yang pembayarannya sudah dikonfirmasi.'],
                     ['title' => '6. Pantau dan nilai', 'body' => 'Masuk ke menu Hasil. TIM MBC bisa melihat nilai, benar/salah/kosong, durasi, detail jawaban, dan mengisi skor esai bila ada.'],
                 ] as $item)

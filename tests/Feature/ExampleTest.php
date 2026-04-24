@@ -12,6 +12,7 @@ use App\Models\StudentAnswer;
 use App\Models\User;
 use App\Support\ExamScoring;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -33,9 +34,32 @@ class ExampleTest extends TestCase
     {
         $user = User::factory()->create();
 
-        foreach (['admin.dashboard', 'admin.exams', 'admin.questions', 'admin.tokens', 'admin.results', 'admin.guide'] as $routeName) {
+        foreach (['admin.dashboard', 'admin.exams', 'admin.questions', 'admin.questions.import', 'admin.tokens', 'admin.results', 'admin.guide'] as $routeName) {
             $this->actingAs($user)->get(route($routeName))->assertOk();
         }
+    }
+
+    public function test_admin_can_download_question_import_template(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get(route('admin.questions.import.template'));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->assertHeader('content-disposition', 'attachment; filename=template-import-soal-mbc.xlsx');
+    }
+
+    public function test_admin_can_download_question_import_sample(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)->get(route('admin.questions.import.sample'));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $response->assertHeader('content-disposition', 'attachment; filename=contoh-import-soal-ips-sd-10.csv');
+        $this->assertStringContainsString('multiple_choice', $response->streamedContent());
     }
 
     public function test_admin_result_detail_can_be_opened(): void
@@ -111,6 +135,49 @@ class ExampleTest extends TestCase
         $this->assertSame('Kalimat pertama sesuai konteks.', $question->options[0]->option_text);
         $this->assertTrue($question->options[0]->is_correct);
         $this->assertFalse($question->options[1]->is_correct);
+    }
+
+    public function test_admin_can_import_questions_from_spreadsheet(): void
+    {
+        $exam = Exam::create([
+            'title' => 'Paket Import Test',
+            'level' => 'SD',
+            'duration_minutes' => 90,
+            'status' => 'active',
+        ]);
+
+        $csv = <<<'CSV'
+order_number,type,question_text,score_weight,explanation,stimulus_key,stimulus_title,stimulus_type,stimulus_content,option_a,option_b,option_c,option_d,option_e,correct_answer,statement_positive_label,statement_negative_label,statement_rows,is_active
+1,multiple_choice,Ide pokok bacaan adalah ...,10,Fokus pada gagasan utama,BAC01,Bacaan 1,text,Bacalah teks berikut,A benar,B salah,C salah,,,A,,,,1
+2,multiple_choice_complex,Pilih semua pernyataan yang sesuai.,10,Boleh lebih dari satu jawaban benar,BAC01,Bacaan 1,text,Bacalah teks berikut,Pernyataan 1,Pernyataan 2,Pernyataan 3,,,A|B,,,,1
+3,true_false,Kalimat tersebut efektif.,5,Periksa struktur kalimat,,,,,,,,,,Benar,,,,1
+4,true_false_group,Tentukan Tepat atau Tidak Tepat.,15,Setiap baris dipilih satu,,,,,,,,,,,Tepat,Tidak Tepat,"Kalimat pertama::1 | Kalimat kedua::0",1
+5,essay,Jelaskan manfaat gotong royong.,20,Dinilai admin,,,,,,,,,,,,,,1
+CSV;
+
+        $file = UploadedFile::fake()->createWithContent('template-soal.csv', $csv);
+
+        Livewire::test('admin.question-import')
+            ->set('exam_id', $exam->id)
+            ->set('replaceExisting', true)
+            ->set('sheet', $file)
+            ->call('import')
+            ->assertHasNoErrors();
+
+        $exam->refresh();
+        $questions = $exam->questions()->with('options', 'stimulus')->orderBy('order_number')->get();
+
+        $this->assertCount(5, $questions);
+        $this->assertSame('multiple_choice', $questions[0]->type);
+        $this->assertSame('multiple_choice_complex', $questions[1]->type);
+        $this->assertSame('true_false', $questions[2]->type);
+        $this->assertSame('true_false_group', $questions[3]->type);
+        $this->assertSame('essay', $questions[4]->type);
+        $this->assertSame('Bacaan 1', $questions[0]->stimulus?->title);
+        $this->assertSame('Tepat', $questions[3]->statementTruthLabels()['positive']);
+        $this->assertCount(2, $questions[3]->options);
+        $this->assertTrue($questions[3]->options[0]->is_correct);
+        $this->assertFalse($questions[3]->options[1]->is_correct);
     }
 
     public function test_seeder_clears_old_attempt_data_when_question_bank_is_reimported(): void
