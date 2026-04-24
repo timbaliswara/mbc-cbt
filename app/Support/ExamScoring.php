@@ -39,6 +39,13 @@ class ExamScoring
             return self::selectedOptionIds($answer) !== [];
         }
 
+        if ($question->usesStatementTruthAnswer()) {
+            $payload = collect($answer->answer_payload ?? []);
+
+            return $payload->count() === $question->options->count()
+                && $payload->every(fn ($value) => in_array($value, ['Benar', 'Salah'], true));
+        }
+
         return filled($answer->answer_text);
     }
 
@@ -89,6 +96,34 @@ class ExamScoring
                 $hasEssay = true;
                 $essayScore += (int) ($answer?->score ?? 0);
                 $hasPendingEssay = $hasPendingEssay || (int) ($answer?->score ?? 0) === 0;
+
+                continue;
+            }
+
+            if ($question->usesStatementTruthAnswer()) {
+                $selectedMap = collect($answer?->answer_payload ?? [])
+                    ->mapWithKeys(fn ($value, $key) => [(int) $key => (string) $value])
+                    ->all();
+
+                $expectedMap = $question->options
+                    ->mapWithKeys(fn ($option) => [$option->id => $option->is_correct ? 'Benar' : 'Salah'])
+                    ->all();
+
+                ksort($selectedMap);
+                ksort($expectedMap);
+
+                $isCorrect = $selectedMap === $expectedMap;
+                $score = $isCorrect ? (int) $question->score_weight : 0;
+
+                if ($answer) {
+                    $answer->update([
+                        'is_correct' => $isCorrect,
+                        'score' => $score,
+                    ]);
+                }
+
+                $isCorrect ? $correct++ : $wrong++;
+                $multipleChoiceScore += $score;
 
                 continue;
             }

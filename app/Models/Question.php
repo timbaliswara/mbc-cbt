@@ -56,6 +56,11 @@ class Question extends Model
         return $this->type === 'true_false';
     }
 
+    public function isTrueFalseGroup(): bool
+    {
+        return $this->type === 'true_false_group';
+    }
+
     public function isMultipleChoiceComplex(): bool
     {
         return $this->type === 'multiple_choice_complex';
@@ -76,10 +81,16 @@ class Question extends Model
         return $this->type === 'multiple_choice_complex';
     }
 
+    public function usesStatementTruthAnswer(): bool
+    {
+        return $this->type === 'true_false_group';
+    }
+
     public function typeLabel(): string
     {
         return match ($this->type) {
             'multiple_choice_complex' => 'Pilihan ganda kompleks',
+            'true_false_group' => 'Benar / salah per pernyataan',
             'true_false' => 'Benar / salah',
             'essay' => 'Esai',
             default => 'Pilihan ganda',

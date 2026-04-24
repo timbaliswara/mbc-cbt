@@ -79,6 +79,20 @@ new class extends Component
             return trim($prefix.($answer->option?->option_text ?? '-'));
         }
 
+        if ($answer->question?->usesStatementTruthAnswer()) {
+            $selected = collect($answer->answer_payload ?? [])
+                ->map(function ($value, $key) use ($answer) {
+                    $statement = $answer->question->options->firstWhere('id', (int) $key);
+
+                    return $statement ? $statement->option_text.': '.$value : null;
+                })
+                ->filter()
+                ->values()
+                ->all();
+
+            return $selected !== [] ? implode(' | ', $selected) : '-';
+        }
+
         if ($answer->question?->usesMultipleOptionAnswer()) {
             $selectedIds = ExamScoring::selectedOptionIds($answer);
             $labels = $answer->question->options
@@ -103,6 +117,15 @@ new class extends Component
 
         if ($question->isEssay()) {
             return $question->answer_key ?: 'Dinilai manual';
+        }
+
+        if ($question->usesStatementTruthAnswer()) {
+            $keys = $question->options
+                ->map(fn ($option) => $option->option_text.': '.($option->is_correct ? 'Benar' : 'Salah'))
+                ->values()
+                ->all();
+
+            return implode(' | ', $keys);
         }
 
         $keys = $question->options

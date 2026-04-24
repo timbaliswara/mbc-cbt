@@ -150,11 +150,11 @@ TEXT);
             'B' => 'Manfaat sinar ultraviolet dapat diperoleh tanpa risiko jika paparan dilakukan secara berlebihan.',
             'C' => 'Dengan perlindungan yang tepat, manfaat sinar matahari tetap bisa diperoleh tanpa membahayakan kesehatan.',
         ], ['A', 'C'], $uv);
-        $this->multiSelect($indonesia, 3, 'Berdasarkan teks, pilih semua pernyataan yang benar.', [
-            'A' => 'Sinar ultraviolet dapat memberikan manfaat dan juga menimbulkan bahaya bagi manusia.',
-            'B' => 'Paparan sinar UV dalam waktu lama dapat berdampak buruk bagi kulit dan mata.',
-            'C' => 'Sinar ultraviolet harus dihindari sepenuhnya karena pasti membahayakan kulit.',
-        ], ['A', 'B'], $uv);
+        $this->trueFalseGroup($indonesia, 3, 'Berdasarkan teks di atas, tentukan Benar atau Salah untuk setiap pernyataan berikut.', [
+            'Sinar ultraviolet dapat memberikan manfaat dan juga menimbulkan bahaya bagi manusia.' => true,
+            'Paparan sinar UV dalam waktu lama dapat berdampak buruk bagi kulit dan mata.' => true,
+            'Sinar ultraviolet harus dihindari sepenuhnya karena pasti membahayakan kulit.' => false,
+        ], $uv);
 
         $this->multipleChoice($indonesia, 4, 'Makna kata "efisien" pada paragraf pertama adalah ...', [
             'A' => 'Menggunakan banyak tenaga untuk melakukan suatu pekerjaan.',
@@ -585,6 +585,41 @@ TEXT);
                 'is_correct' => in_array($label, $correctKeys, true),
                 'order_number' => array_search($label, ['A', 'B', 'C', 'D', 'E'], true) + 1,
             ]);
+        }
+
+        return $question;
+    }
+
+    private function trueFalseGroup(
+        Exam $exam,
+        int $number,
+        string $text,
+        array $statements,
+        ?Stimulus $stimulus = null,
+        int $weight = 10,
+    ): Question {
+        $question = Question::updateOrCreate(
+            ['exam_id' => $exam->id, 'order_number' => $number],
+            [
+                'stimulus_id' => $stimulus?->id,
+                'type' => 'true_false_group',
+                'question_text' => $text,
+                'answer_key' => null,
+                'score_weight' => $weight,
+                'is_active' => true,
+            ],
+        );
+
+        $question->options()->delete();
+        $index = 1;
+        foreach ($statements as $statement => $isTrue) {
+            $question->options()->create([
+                'label' => (string) $index,
+                'option_text' => $statement,
+                'is_correct' => $isTrue,
+                'order_number' => $index,
+            ]);
+            $index++;
         }
 
         return $question;

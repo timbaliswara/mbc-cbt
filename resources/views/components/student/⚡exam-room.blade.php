@@ -31,7 +31,9 @@ new class extends Component
                 continue;
             }
 
-            if ($question->usesMultipleOptionAnswer()) {
+            if ($question->usesStatementTruthAnswer()) {
+                $this->answers[$answer->question_id] = $answer->answer_payload ?? [];
+            } elseif ($question->usesMultipleOptionAnswer()) {
                 $this->answers[$answer->question_id] = ExamScoring::selectedOptionIds($answer);
             } else {
                 $this->answers[$answer->question_id] = $answer->question_option_id ?: $answer->answer_text;
@@ -122,6 +124,14 @@ new class extends Component
 
         if ($question->usesSingleOptionAnswer()) {
             $payload['question_option_id'] = filled($value) ? (int) $value : null;
+        } elseif ($question->usesStatementTruthAnswer()) {
+            $selections = collect((array) $value)
+                ->filter(fn ($item, $key) => filled($item) && is_numeric((string) $key))
+                ->map(fn ($item) => in_array($item, ['Benar', 'Salah'], true) ? $item : null)
+                ->filter()
+                ->all();
+
+            $payload['answer_payload'] = $selections !== [] ? $selections : null;
         } elseif ($question->usesMultipleOptionAnswer()) {
             $selectedIds = collect((array) $value)
                 ->filter(fn ($item) => filled($item))
@@ -245,7 +255,7 @@ new class extends Component
         $answer = new \App\Models\StudentAnswer([
             'question_option_id' => $item->usesSingleOptionAnswer() ? ($answers[$item->id] ?? null) : null,
             'answer_text' => $item->isEssay() ? ($answers[$item->id] ?? null) : null,
-            'answer_payload' => $item->usesMultipleOptionAnswer() ? ($answers[$item->id] ?? null) : null,
+            'answer_payload' => ($item->usesMultipleOptionAnswer() || $item->usesStatementTruthAnswer()) ? ($answers[$item->id] ?? null) : null,
         ]);
 
         return \App\Support\ExamScoring::answerIsFilled($item, $answer);
@@ -368,6 +378,36 @@ new class extends Component
                                 </span>
                             </label>
                         @endforeach
+                    </div>
+                @elseif ($question->usesStatementTruthAnswer())
+                    <div class="mt-6 overflow-hidden rounded-md border border-zinc-200">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-zinc-50 text-zinc-600">
+                                <tr>
+                                    <th class="px-4 py-3 font-semibold">Pernyataan</th>
+                                    <th class="px-4 py-3 text-center font-semibold">Benar</th>
+                                    <th class="px-4 py-3 text-center font-semibold">Salah</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-zinc-100 bg-white">
+                                @foreach ($question->options as $statement)
+                                    <tr wire:key="statement-{{ $question->id }}-{{ $statement->id }}">
+                                        <td class="px-4 py-4 leading-6 text-zinc-800">{{ $statement->option_text }}</td>
+                                        @foreach (['Benar', 'Salah'] as $choice)
+                                            <td class="px-4 py-4 text-center">
+                                                <input
+                                                    wire:model.live="answers.{{ $question->id }}.{{ $statement->id }}"
+                                                    type="radio"
+                                                    value="{{ $choice }}"
+                                                    name="statement_{{ $question->id }}_{{ $statement->id }}"
+                                                    class="text-emerald-700"
+                                                >
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 @elseif ($question->usesMultipleOptionAnswer())
                     <div class="mt-6 rounded-md border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-900">
