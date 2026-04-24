@@ -34,7 +34,9 @@ new class extends Component
             if ($question->usesStatementTruthAnswer()) {
                 $this->answers[$answer->question_id] = $answer->answer_payload ?? [];
             } elseif ($question->usesMultipleOptionAnswer()) {
-                $this->answers[$answer->question_id] = ExamScoring::selectedOptionIds($answer);
+                $this->answers[$answer->question_id] = collect(ExamScoring::selectedOptionIds($answer))
+                    ->mapWithKeys(fn ($optionId) => [(int) $optionId => true])
+                    ->all();
             } else {
                 $this->answers[$answer->question_id] = $answer->question_option_id ?: $answer->answer_text;
             }
@@ -134,7 +136,8 @@ new class extends Component
             $payload['answer_payload'] = $selections !== [] ? $selections : null;
         } elseif ($question->usesMultipleOptionAnswer()) {
             $selectedIds = collect((array) $value)
-                ->filter(fn ($item) => filled($item))
+                ->filter(fn ($item, $key) => filter_var($item, FILTER_VALIDATE_BOOLEAN) || $item === true || $item === 1 || $item === '1')
+                ->keys()
                 ->map(fn ($item) => (int) $item)
                 ->values()
                 ->all();
@@ -417,10 +420,10 @@ new class extends Component
                         @foreach ($this->optionsFor($question) as $option)
                             <label wire:key="question-{{ $question->id }}-option-{{ $option->id }}" class="flex cursor-pointer gap-3 rounded-md border border-zinc-200 bg-white/80 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40">
                                 <input
-                                    wire:model.live="answers.{{ $question->id }}"
-                                    name="answer_{{ $question->id }}[]"
-                                    value="{{ $option->id }}"
+                                    wire:model.live="answers.{{ $question->id }}.{{ $option->id }}"
                                     type="checkbox"
+                                    value="1"
+                                    name="answer_{{ $question->id }}_{{ $option->id }}"
                                     class="mt-1 rounded border-zinc-300 text-emerald-700"
                                 >
                                 <span class="text-sm text-zinc-700">

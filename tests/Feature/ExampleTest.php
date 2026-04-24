@@ -233,14 +233,44 @@ class ExampleTest extends TestCase
         ]);
 
         $selectedIds = $question->options->whereIn('label', ['A', 'C'])->pluck('id')->values()->all();
+        $selectionMap = array_fill_keys($selectedIds, true);
 
         Livewire::test('student.exam-room', ['attempt' => $attempt])
-            ->set('answers.'.$question->id, $selectedIds)
+            ->set('answers.'.$question->id, $selectionMap)
             ->call('saveAnswer', $question->id);
 
         $answer = $attempt->answers()->where('question_id', $question->id)->firstOrFail();
 
         $this->assertSame($selectedIds, $answer->answer_payload);
+    }
+
+    public function test_multiple_choice_complex_checkboxes_do_not_toggle_all_options(): void
+    {
+        $this->seed();
+
+        $exam = Exam::with('questions.options')->where('status', 'active')->firstOrFail();
+        $question = $exam->questions->firstWhere('type', 'multiple_choice_complex');
+        $student = Student::create(['name' => 'Checkbox Tester']);
+        $token = ExamToken::create([
+            'exam_id' => $exam->id,
+            'token' => 'CMPBOX',
+            'status' => 'active',
+        ]);
+        $attempt = ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id,
+            'exam_token_id' => $token->id,
+            'started_at' => now(),
+            'status' => 'in_progress',
+        ]);
+
+        $firstOption = $question->options->firstWhere('label', 'A');
+        $secondOption = $question->options->firstWhere('label', 'B');
+
+        Livewire::test('student.exam-room', ['attempt' => $attempt])
+            ->set('answers.'.$question->id.'.'.$firstOption->id, true)
+            ->assertSet('answers.'.$question->id.'.'.$firstOption->id, true)
+            ->assertSet('answers.'.$question->id.'.'.$secondOption->id, null);
     }
 
     public function test_student_can_reopen_finished_result_from_token_portal(): void
