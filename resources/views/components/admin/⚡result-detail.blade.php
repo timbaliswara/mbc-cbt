@@ -188,7 +188,10 @@ new class extends Component
     <section class="hero-panel rounded-md p-6 shadow-2xl shadow-emerald-950/10">
         <div class="flex flex-wrap items-start justify-between gap-6">
             <div class="max-w-3xl">
-                <a href="{{ route('admin.results') }}" class="inline-flex items-center rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15">Kembali ke rekap</a>
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="{{ route('admin.results') }}" class="inline-flex items-center rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15">Kembali ke rekap</a>
+                    <a href="{{ route('admin.results.pdf', $attempt) }}" class="inline-flex items-center rounded-md border border-emerald-200/40 bg-emerald-500/20 px-3 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500/30">Download PDF</a>
+                </div>
                 <p class="mt-5 text-sm font-medium uppercase tracking-[0.16em] text-emerald-50/75">Detail Hasil</p>
                 <h2 class="mt-3 text-3xl font-semibold tracking-tight text-white">{{ $attempt->student->name }}</h2>
                 <p class="mt-3 text-sm leading-6 text-emerald-50/75">{{ $attempt->exam->title }} · {{ $attempt->student->school ?: 'Sekolah belum diisi' }} · {{ $attempt->student->grade ?: 'Kelas -' }}</p>
@@ -223,7 +226,7 @@ new class extends Component
         </div>
     </section>
 
-    <section class="surface overflow-hidden rounded-md">
+    <section class="surface rounded-md">
         <div class="border-b border-zinc-200 p-5">
             <h2 class="text-base font-semibold text-zinc-950">Detail jawaban per soal</h2>
             <p class="mt-1 text-sm text-zinc-500">Gunakan halaman ini untuk melihat jawaban, kunci, status benar/salah, dan koreksi nilai esai.</p>
@@ -233,11 +236,11 @@ new class extends Component
             <table class="w-full text-left text-sm">
                 <thead class="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
                     <tr>
-                        <th class="px-5 py-3">Soal</th>
-                        <th class="px-5 py-3">Jawaban siswa</th>
-                        <th class="px-5 py-3">Kunci</th>
-                        <th class="px-5 py-3">Status</th>
-                        <th class="px-5 py-3">Nilai</th>
+                        <th class="sticky top-20 z-20 border-b border-zinc-200 bg-zinc-50 px-5 py-3 shadow-sm">Soal</th>
+                        <th class="sticky top-20 z-20 border-b border-zinc-200 bg-zinc-50 px-5 py-3 shadow-sm">Jawaban siswa</th>
+                        <th class="sticky top-20 z-20 border-b border-zinc-200 bg-zinc-50 px-5 py-3 shadow-sm">Kunci</th>
+                        <th class="sticky top-20 z-20 border-b border-zinc-200 bg-zinc-50 px-5 py-3 shadow-sm">Status</th>
+                        <th class="sticky top-20 z-20 border-b border-zinc-200 bg-zinc-50 px-5 py-3 shadow-sm">Nilai</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-100 bg-white align-top">

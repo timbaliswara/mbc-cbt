@@ -9,9 +9,11 @@ use App\Models\ExamToken;
 use App\Models\Question;
 use App\Models\Stimulus;
 use App\Models\Student;
+use App\Models\StudentAnswer;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
@@ -19,6 +21,8 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        $this->resetExamDomainData();
+
         User::updateOrCreate(
             ['email' => 'admin@mbc.test'],
             ['name' => 'Admin MBC', 'password' => 'password', 'role' => 'admin'],
@@ -672,5 +676,19 @@ TEXT);
                 'essay_status' => 'not_needed',
             ],
         );
+    }
+
+    private function resetExamDomainData(): void
+    {
+        DB::table('option_media')->delete();
+        DB::table('question_media')->delete();
+        ExamResult::query()->delete();
+        StudentAnswer::query()->delete();
+        ExamAttempt::query()->delete();
+        ExamToken::query()->delete();
+        Question::query()->delete();
+        Stimulus::query()->delete();
+        Exam::query()->delete();
+        Student::query()->delete();
     }
 }

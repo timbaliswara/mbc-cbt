@@ -18,7 +18,7 @@ new class extends Component
     public array $incompleteQuestionNumbers = [];
     public ?string $submitWarning = null;
     public ?string $focusWarning = null;
-    public int $focusLimit = 3;
+    public int $focusLimit = 2;
 
     public function mount(ExamAttempt $attempt): void
     {
@@ -95,17 +95,21 @@ new class extends Component
 
     public function registerFocusViolation(): void
     {
+        if ($this->attempt->status === 'finished') {
+            return;
+        }
+
         $this->attempt->increment('focus_violation_count');
         $count = $this->attempt->refresh()->focus_violation_count;
 
         if ($count >= $this->focusLimit) {
-            $this->focusWarning = 'Ruang ujian terdeteksi beberapa kali ditinggalkan. Jawaban akan langsung dikumpulkan oleh TIM MBC.';
+            $this->focusWarning = 'Ruang ujian kembali ditinggalkan setelah peringatan pertama. Jawaban langsung dikumpulkan oleh TIM MBC.';
             $this->finish(true);
 
             return;
         }
 
-        $this->focusWarning = 'Ruang ujian terdeteksi berpindah tab/jendela '.$count.' dari '.$this->focusLimit.' kali. Kalau terulang terus, ujian akan langsung dikumpulkan.';
+        $this->focusWarning = 'Peringatan 1 dari 1: ruang ujian terdeteksi ditinggalkan. Jika kamu berpindah tab, jendela, atau aplikasi sekali lagi, ujian akan langsung dikumpulkan otomatis.';
     }
 
     public function saveAnswer(int $questionId): void
@@ -365,7 +369,7 @@ new class extends Component
                         @foreach ($this->optionsFor($question) as $option)
                             <label wire:key="question-{{ $question->id }}-option-{{ $option->id }}" class="flex cursor-pointer gap-3 rounded-md border border-zinc-200 bg-white/80 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40">
                                 <input
-                                    wire:model.live="answers.{{ $question->id }}"
+                                    wire:model="answers.{{ $question->id }}"
                                     name="answer_{{ $question->id }}"
                                     value="{{ $option->id }}"
                                     type="radio"
@@ -403,7 +407,7 @@ new class extends Component
                                         @foreach ([$labels['positive'], $labels['negative']] as $choice)
                                             <td class="px-4 py-4 text-center">
                                                 <input
-                                                    wire:model.live="answers.{{ $question->id }}.{{ $statement->id }}"
+                                                    wire:model="answers.{{ $question->id }}.{{ $statement->id }}"
                                                     type="radio"
                                                     value="{{ $choice }}"
                                                     name="statement_{{ $question->id }}_{{ $statement->id }}"
@@ -424,7 +428,7 @@ new class extends Component
                         @foreach ($this->optionsFor($question) as $option)
                             <label wire:key="question-{{ $question->id }}-option-{{ $option->id }}" class="flex cursor-pointer gap-3 rounded-md border border-zinc-200 bg-white/80 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40">
                                 <input
-                                    wire:model.live="answers.{{ $question->id }}.{{ $option->id }}"
+                                    wire:model="answers.{{ $question->id }}.{{ $option->id }}"
                                     type="checkbox"
                                     value="1"
                                     name="answer_{{ $question->id }}_{{ $option->id }}"
@@ -441,7 +445,7 @@ new class extends Component
                     </div>
                 @else
                     <textarea
-                        wire:model.live.debounce.700ms="answers.{{ $question->id }}"
+                        wire:model.blur="answers.{{ $question->id }}"
                         rows="8"
                         class="mt-6 w-full rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm"
                         placeholder="Tulis jawaban esai di sini"

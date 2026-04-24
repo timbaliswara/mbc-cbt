@@ -2,6 +2,7 @@
 
 use App\Models\ExamAttempt;
 use App\Support\ExamScoring;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -75,6 +76,74 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
             fclose($handle);
         }, 'rekap-hasil-mbc.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     })->name('results.export');
+    Route::get('/results/{attempt}/pdf', function (ExamAttempt $attempt) {
+        $attempt->load([
+            'exam.questions.options',
+            'student',
+            'token',
+            'result',
+            'answers.question.options',
+            'answers.option',
+        ]);
+
+        $answersByQuestion = $attempt->answers->keyBy('question_id');
+        $wrongNumbers = [];
+        $blankNumbers = [];
+
+        foreach ($attempt->exam->questions as $question) {
+            $answer = $answersByQuestion->get($question->id);
+
+            if (! ExamScoring::answerIsFilled($question, $answer)) {
+                $blankNumbers[] = $question->order_number;
+
+                continue;
+            }
+
+            if ($question->isEssay()) {
+                continue;
+            }
+
+            if (! $answer?->is_correct) {
+                $wrongNumbers[] = $question->order_number;
+            }
+        }
+
+        $result = $attempt->result;
+        $pdf = Pdf::loadView('pdf.result-certificate', [
+            'attempt' => $attempt,
+            'student' => [
+                'token' => $attempt->token?->token ?? '-',
+                'name' => $attempt->student->name ?? '-',
+                'phone' => $attempt->student->phone ?: '-',
+                'grade' => $attempt->student->grade ?: '-',
+                'school' => $attempt->student->school ?: '-',
+            ],
+            'examData' => [
+                'title' => $attempt->exam->title ?? '-',
+                'status' => str($attempt->status ?? '-')->replace('_', ' ')->title()->toString(),
+                'started_at' => $attempt->started_at?->format('d M Y H:i') ?? '-',
+                'finished_at' => $attempt->finished_at?->format('d M Y H:i') ?? '-',
+            ],
+            'summary' => [
+                'correct_count' => $result?->correct_count ?? 0,
+                'wrong_count' => $result?->wrong_count ?? 0,
+                'blank_count' => $result?->blank_count ?? 0,
+                'multiple_choice_score' => $result?->multiple_choice_score ?? 0,
+                'essay_score' => $result?->essay_score ?? 0,
+                'total_score' => $result?->total_score ?? 0,
+                'max_score' => ExamScoring::maxScore($attempt),
+            ],
+            'wrongNumbers' => $wrongNumbers,
+            'blankNumbers' => $blankNumbers,
+            'contact' => [
+                'address' => 'Jl. Cempaka No.40, Ngepos, Klaten, Kec. Klaten Tengah, Kabupaten Klaten, Jawa Tengah 57411',
+                'instagram' => 'https://www.instagram.com/bimbelklubmbc',
+            ],
+        ])->setPaper('a4', 'portrait');
+        $safeFilename = str('hasil-'.$attempt->student->name.'-'.$attempt->id)->slug('-')->toString().'.pdf';
+
+        return $pdf->download($safeFilename);
+    })->name('results.pdf');
     Route::get('/results/{attempt}', fn (ExamAttempt $attempt) => view('pages.admin-result-detail', compact('attempt')))->name('results.show');
     Route::get('/guide', fn () => view('pages.admin-guide'))->name('guide');
 });

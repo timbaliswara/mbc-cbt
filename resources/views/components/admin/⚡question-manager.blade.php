@@ -25,6 +25,9 @@ new class extends Component
     public array $optionTexts = ['A' => '', 'B' => '', 'C' => '', 'D' => '', 'E' => ''];
     public array $optionImages = [];
     public array $existingOptionImages = [];
+    public string $statementPositiveLabel = 'Benar';
+    public string $statementNegativeLabel = 'Salah';
+    public array $statementRows = [];
 
     public string $stimulusTitle = '';
     public string $stimulusType = 'text';
@@ -35,6 +38,7 @@ new class extends Component
     {
         $this->exam_id = Exam::latest()->value('id');
         $this->order_number = (Question::where('exam_id', $this->exam_id)->max('order_number') ?? 0) + 1;
+        $this->statementRows = $this->defaultStatementRows();
     }
 
     public function updatedExamId(): void
@@ -74,7 +78,7 @@ new class extends Component
             'exam_id' => ['required', 'exists:exams,id'],
             'stimulus_id' => ['nullable', 'exists:stimuli,id'],
             'order_number' => ['required', 'integer', 'min:1'],
-            'type' => ['required', 'in:multiple_choice,multiple_choice_complex,true_false,essay'],
+            'type' => ['required', 'in:multiple_choice,multiple_choice_complex,true_false,true_false_group,essay'],
             'question_text' => ['required', 'string'],
             'score_weight' => ['required', 'integer', 'min:1'],
             'explanation' => ['nullable', 'string'],
@@ -89,6 +93,22 @@ new class extends Component
         if ($data['type'] === 'multiple_choice_complex' && count(array_filter($this->correctOptions)) === 0) {
             $this->addError('correctOptions', 'Pilih minimal satu jawaban benar.');
             return;
+        }
+
+        if ($data['type'] === 'true_false_group') {
+            $rows = $this->normalizedStatementRows();
+
+            if (! filled(trim($this->statementPositiveLabel)) || ! filled(trim($this->statementNegativeLabel))) {
+                $this->addError('statementLabels', 'Isi dua label jawaban untuk tabel pernyataan.');
+
+                return;
+            }
+
+            if (count($rows) < 2) {
+                $this->addError('statementRows', 'Isi minimal dua pernyataan untuk soal matriks.');
+
+                return;
+            }
         }
 
         $payload = [
@@ -112,14 +132,24 @@ new class extends Component
         $question = Question::updateOrCreate(['id' => $this->editingId], $payload);
         $question->options()->delete();
 
-        if ($question->usesSingleOptionAnswer() || $question->usesMultipleOptionAnswer()) {
+        if ($question->usesStatementTruthAnswer()) {
+            foreach ($this->normalizedStatementRows() as $index => $row) {
+                $question->options()->create([
+                    'label' => (string) ($index + 1),
+                    'option_text' => $row['text'],
+                    'image_path' => null,
+                    'is_correct' => $row['is_correct'],
+                    'order_number' => $index + 1,
+                ]);
+            }
+        } elseif ($question->usesSingleOptionAnswer() || $question->usesMultipleOptionAnswer()) {
             foreach ($this->optionLabels() as $index => $label) {
                 if ($question->isTrueFalse()) {
                     $text = $label;
                     $image = null;
                 } else {
-                $text = trim($this->optionTexts[$label] ?? '');
-                $image = $this->optionImages[$label] ?? null;
+                    $text = trim($this->optionTexts[$label] ?? '');
+                    $image = $this->optionImages[$label] ?? null;
                 }
 
                 if ($text === '' && ! $image) {
@@ -156,10 +186,32 @@ new class extends Component
         $this->existingQuestionImage = $question->image_path;
         $this->optionTexts = ['A' => '', 'B' => '', 'C' => '', 'D' => '', 'E' => ''];
         $this->existingOptionImages = [];
+        $this->statementPositiveLabel = 'Benar';
+        $this->statementNegativeLabel = 'Salah';
+        $this->statementRows = $this->defaultStatementRows();
+
+        if ($question->usesStatementTruthAnswer()) {
+            $labels = $question->statementTruthLabels();
+            $this->statementPositiveLabel = $labels['positive'];
+            $this->statementNegativeLabel = $labels['negative'];
+            $this->statementRows = $question->options
+                ->map(fn ($option) => [
+                    'text' => (string) $option->option_text,
+                    'is_correct' => (bool) $option->is_correct,
+                ])
+                ->values()
+                ->all();
+
+            if ($this->statementRows === []) {
+                $this->statementRows = $this->defaultStatementRows();
+            }
+        }
 
         foreach ($question->options as $option) {
-            $this->optionTexts[$option->label] = (string) $option->option_text;
-            $this->existingOptionImages[$option->label] = $option->image_path;
+            if (array_key_exists($option->label, $this->optionTexts)) {
+                $this->optionTexts[$option->label] = (string) $option->option_text;
+                $this->existingOptionImages[$option->label] = $option->image_path;
+            }
         }
 
         $this->dispatch('question-editing');
@@ -177,6 +229,9 @@ new class extends Component
         $this->answer_key = 'A';
         $this->correctOptions = ['A'];
         $this->score_weight = 1;
+        $this->statementPositiveLabel = 'Benar';
+        $this->statementNegativeLabel = 'Salah';
+        $this->statementRows = $this->defaultStatementRows();
         $this->optionTexts = ['A' => '', 'B' => '', 'C' => '', 'D' => '', 'E' => ''];
         $this->order_number = (Question::where('exam_id', $this->exam_id)->max('order_number') ?? 0) + 1;
     }
@@ -194,7 +249,42 @@ new class extends Component
             return;
         }
 
+        if ($value === 'true_false_group') {
+            if ($this->statementRows === []) {
+                $this->statementRows = $this->defaultStatementRows();
+            }
+
+            if (! filled(trim($this->statementPositiveLabel))) {
+                $this->statementPositiveLabel = 'Benar';
+            }
+
+            if (! filled(trim($this->statementNegativeLabel))) {
+                $this->statementNegativeLabel = 'Salah';
+            }
+
+            return;
+        }
+
         $this->answer_key = in_array($this->answer_key, ['A', 'B', 'C', 'D', 'E'], true) ? $this->answer_key : 'A';
+    }
+
+    public function addStatementRow(): void
+    {
+        $this->statementRows[] = ['text' => '', 'is_correct' => true];
+    }
+
+    public function removeStatementRow(int $index): void
+    {
+        if (! isset($this->statementRows[$index])) {
+            return;
+        }
+
+        unset($this->statementRows[$index]);
+        $this->statementRows = array_values($this->statementRows);
+
+        if ($this->statementRows === []) {
+            $this->statementRows = $this->defaultStatementRows();
+        }
     }
 
     private function compiledAnswerKey(): ?string
@@ -202,6 +292,10 @@ new class extends Component
         return match ($this->type) {
             'multiple_choice', 'true_false' => $this->answer_key,
             'multiple_choice_complex' => implode(',', array_values(array_unique(array_filter($this->correctOptions)))),
+            'true_false_group' => json_encode([
+                'positive' => trim($this->statementPositiveLabel),
+                'negative' => trim($this->statementNegativeLabel),
+            ], JSON_UNESCAPED_UNICODE),
             default => null,
         };
     }
@@ -218,6 +312,28 @@ new class extends Component
         }
 
         return $this->answer_key === $label;
+    }
+
+    private function defaultStatementRows(): array
+    {
+        return [
+            ['text' => '', 'is_correct' => true],
+            ['text' => '', 'is_correct' => false],
+        ];
+    }
+
+    private function normalizedStatementRows(): array
+    {
+        return collect($this->statementRows)
+            ->map(function ($row) {
+                return [
+                    'text' => trim((string) ($row['text'] ?? '')),
+                    'is_correct' => filter_var($row['is_correct'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                ];
+            })
+            ->filter(fn ($row) => $row['text'] !== '')
+            ->values()
+            ->all();
     }
 
     public function with(): array
@@ -301,6 +417,7 @@ new class extends Component
                                     <option value="multiple_choice">Pilihan ganda</option>
                                     <option value="multiple_choice_complex">Pilihan ganda kompleks</option>
                                     <option value="true_false">Benar / salah</option>
+                                    <option value="true_false_group">Matriks pernyataan</option>
                                     <option value="essay">Esai</option>
                                 </select>
                             </div>
@@ -327,7 +444,56 @@ new class extends Component
                             <p class="text-xs text-zinc-500">Upload gambar baru hanya jika ingin mengganti gambar soal saat ini.</p>
                         @endif
 
-                        @if (in_array($type, ['multiple_choice', 'multiple_choice_complex', 'true_false'], true))
+                        @if ($type === 'true_false_group')
+                            <div class="space-y-4 rounded-md border border-zinc-200 bg-zinc-50 p-4">
+                                <div class="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-sky-900">
+                                    Gunakan tipe ini untuk soal model tabel seperti <span class="font-medium">Benar / Salah</span>, <span class="font-medium">Tepat / Tidak Tepat</span>, atau <span class="font-medium">Sesuai / Tidak Sesuai</span>. Setiap baris adalah satu pernyataan, lalu siswa memilih salah satu kolom jawaban.
+                                </div>
+
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label class="text-sm font-medium text-zinc-800">Label kolom kiri</label>
+                                        <input wire:model="statementPositiveLabel" placeholder="Contoh: Tepat" class="mt-2 w-full rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
+                                    </div>
+                                    <div>
+                                        <label class="text-sm font-medium text-zinc-800">Label kolom kanan</label>
+                                        <input wire:model="statementNegativeLabel" placeholder="Contoh: Tidak Tepat" class="mt-2 w-full rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
+                                    </div>
+                                </div>
+                                @error('statementLabels') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+
+                                <div class="overflow-hidden rounded-md border border-zinc-200 bg-white">
+                                    <div class="grid grid-cols-[1fr_180px_56px] gap-0 border-b border-zinc-200 bg-zinc-100 text-sm font-semibold text-zinc-700">
+                                        <div class="px-4 py-3">Pernyataan</div>
+                                        <div class="px-4 py-3">Kunci</div>
+                                        <div class="px-4 py-3 text-center">Aksi</div>
+                                    </div>
+                                    <div class="divide-y divide-zinc-200">
+                                        @foreach ($statementRows as $index => $row)
+                                            <div wire:key="statement-row-{{ $index }}" class="grid grid-cols-[1fr_180px_56px] gap-0">
+                                                <div class="px-4 py-3">
+                                                    <textarea wire:model="statementRows.{{ $index }}.text" rows="2" placeholder="Tulis pernyataan baris {{ $index + 1 }}" class="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm"></textarea>
+                                                </div>
+                                                <div class="px-4 py-3">
+                                                    <select wire:model="statementRows.{{ $index }}.is_correct" class="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
+                                                        <option value="1">{{ $statementPositiveLabel ?: 'Pilihan kiri' }}</option>
+                                                        <option value="0">{{ $statementNegativeLabel ?: 'Pilihan kanan' }}</option>
+                                                    </select>
+                                                </div>
+                                                <div class="flex items-center justify-center px-2 py-3">
+                                                    <button type="button" wire:click="removeStatementRow({{ $index }})" class="rounded-md border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">-</button>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                @error('statementRows') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+
+                                <button type="button" wire:click="addStatementRow" class="rounded-md border border-zinc-200 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">
+                                    Tambah pernyataan
+                                </button>
+                            </div>
+                        @elseif (in_array($type, ['multiple_choice', 'multiple_choice_complex', 'true_false'], true))
                             <div class="space-y-3">
                                 @if ($type === 'multiple_choice_complex')
                                     <div class="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-sky-900">
@@ -428,6 +594,30 @@ new class extends Component
                                                     @endif
                                                 </div>
                                             @endforeach
+                                        </div>
+                                    @elseif ($question->usesStatementTruthAnswer())
+                                        @php
+                                            $labels = $question->statementTruthLabels();
+                                        @endphp
+                                        <div class="mt-3 overflow-hidden rounded-md border border-zinc-200">
+                                            <table class="w-full text-left text-sm">
+                                                <thead class="bg-zinc-50 text-zinc-600">
+                                                    <tr>
+                                                        <th class="px-3 py-2 font-semibold">Pernyataan</th>
+                                                        <th class="px-3 py-2 font-semibold">{{ $labels['positive'] }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-zinc-100 bg-white">
+                                                    @foreach ($question->options as $option)
+                                                        <tr>
+                                                            <td class="px-3 py-3 text-zinc-800">{{ $option->option_text }}</td>
+                                                            <td class="px-3 py-3 font-medium {{ $option->is_correct ? 'text-emerald-800' : 'text-zinc-500' }}">
+                                                                {{ $option->is_correct ? $labels['positive'] : $labels['negative'] }}
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
                                         </div>
                                     @endif
                                 </div>
