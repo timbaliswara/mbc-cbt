@@ -150,11 +150,11 @@ TEXT);
             'B' => 'Manfaat sinar ultraviolet dapat diperoleh tanpa risiko jika paparan dilakukan secara berlebihan.',
             'C' => 'Dengan perlindungan yang tepat, manfaat sinar matahari tetap bisa diperoleh tanpa membahayakan kesehatan.',
         ], ['A', 'C'], $uv);
-        $this->trueFalseGroup($indonesia, 3, 'Berdasarkan teks di atas, tentukan Benar atau Salah untuk setiap pernyataan berikut.', [
+        $this->statementGroup($indonesia, 3, 'Berdasarkan teks di atas, tentukan Benar atau Salah untuk setiap pernyataan berikut.', [
             'Sinar ultraviolet dapat memberikan manfaat dan juga menimbulkan bahaya bagi manusia.' => true,
             'Paparan sinar UV dalam waktu lama dapat berdampak buruk bagi kulit dan mata.' => true,
             'Sinar ultraviolet harus dihindari sepenuhnya karena pasti membahayakan kulit.' => false,
-        ], $uv);
+        ], 'Benar', 'Salah', $uv);
 
         $this->multipleChoice($indonesia, 4, 'Makna kata "efisien" pada paragraf pertama adalah ...', [
             'A' => 'Menggunakan banyak tenaga untuk melakukan suatu pekerjaan.',
@@ -167,11 +167,11 @@ TEXT);
             'B' => 'Teknologi sebaiknya digunakan secara bijak agar tidak menimbulkan dampak negatif.',
             'C' => 'Teknologi membuat manusia tidak perlu berpikir dan berinteraksi sosial.',
         ], ['A', 'B'], $teknologi);
-        $this->multiSelect($indonesia, 6, 'Teks tersebut memuat unsur kebahasaan. Pilih semua pernyataan yang tepat.', [
-            'A' => 'Kata "memudahkan" menggunakan imbuhan me- yang menunjukkan tindakan aktif.',
-            'B' => 'Kata "dimanfaatkan" dengan awalan di- menunjukkan subjek melakukan tindakan.',
-            'C' => 'Kata "pengguna" dengan awalan pe- membentuk kata benda.',
-        ], ['A'], $teknologi);
+        $this->statementGroup($indonesia, 6, 'Teks tersebut memuat unsur kebahasaan. Tentukan Tepat atau Tidak Tepat untuk setiap pernyataan berikut!', [
+            'Kata "memudahkan" menggunakan imbuhan me- yang menunjukkan tindakan aktif.' => true,
+            'Kata "dimanfaatkan" dengan awalan di- menunjukkan subjek melakukan tindakan.' => false,
+            'Kata "pengguna" dengan awalan pe- membentuk kata benda.' => false,
+        ], 'Tepat', 'Tidak Tepat', $teknologi);
 
         $this->multipleChoice($indonesia, 7, 'Ringkasan yang paling tepat untuk cerita tersebut adalah ...', [
             'A' => 'Rendi belajar menghargai waktu dan proses melalui pengalaman sederhana dengan jam tua.',
@@ -196,22 +196,22 @@ TEXT);
             'C' => 'Pekerjaan berat tidak perlu diselesaikan dengan terburu-buru.',
             'D' => 'Usaha kecil yang dilakukan terus-menerus dapat menghasilkan sesuatu yang besar.',
         ], 'D', $kuraKura);
-        $this->multiSelect($indonesia, 11, 'Apa saja keteladanan tokoh dalam fabel tersebut? Pilih semua pernyataan yang sesuai.', [
-            'A' => 'Monyet sejak awal bersikap menghargai kura-kura.',
-            'B' => 'Kura-kura menunjukkan sikap sabar dan tekun.',
-            'C' => 'Cerita mengajarkan pentingnya kerja sama.',
-        ], ['B', 'C'], $kuraKura);
+        $this->statementGroup($indonesia, 11, 'Apa saja keteladanan tokoh dalam fabel tersebut? Tentukan Sesuai atau Tidak Sesuai untuk setiap pernyataan berikut!', [
+            'Monyet sejak awal bersikap menghargai kura-kura.' => false,
+            'Kura-kura menunjukkan sikap sabar dan tekun.' => true,
+            'Cerita mengajarkan pentingnya kerja sama.' => true,
+        ], 'Sesuai', 'Tidak Sesuai', $kuraKura);
         $this->multiSelect($indonesia, 12, 'Pernyataan yang sesuai dengan isi fabel adalah ... Pilih semua pernyataan yang benar.', [
             'A' => 'Semua hewan memilih meninggalkan sungai tanpa berbuat apa-apa.',
             'B' => 'Kura-kura tetap tenang saat sungai hampir meluap.',
             'C' => 'Monyet akhirnya menyadari kesalahannya.',
         ], ['B', 'C'], $kuraKura);
 
-        $this->multiSelect($indonesia, 13, 'Berdasarkan isi teks, pilih semua pernyataan yang benar.', [
-            'A' => 'SIM merupakan surat resmi yang wajib dimiliki pengendara kendaraan bermotor.',
-            'B' => 'Pemohon SIM perlu menyiapkan persyaratan yang banyak.',
-            'C' => 'Ujian praktik dilakukan untuk menilai kemampuan mengemudi.',
-        ], ['A', 'C'], $sim);
+        $this->statementGroup($indonesia, 13, 'Berdasarkan isi teks, tentukan Benar atau Salah untuk setiap pernyataan berikut!', [
+            'SIM merupakan surat resmi yang wajib dimiliki pengendara kendaraan bermotor.' => true,
+            'Pemohon SIM perlu menyiapkan persyaratan yang banyak.' => false,
+            'Ujian praktik dilakukan untuk menilai kemampuan mengemudi.' => true,
+        ], 'Benar', 'Salah', $sim);
         $this->multipleChoice($indonesia, 14, 'Makna imbuhan me- pada kata "mengemudi" adalah ...', [
             'A' => 'Menunjukkan hasil dari suatu pekerjaan.',
             'B' => 'Menunjukkan peristiwa yang terjadi tanpa pelaku.',
@@ -230,11 +230,11 @@ TEXT);
             'C' => 'Adit kecewa karena nilainya rendah meskipun sudah belajar cukup lama.',
             'D' => 'Adit mendapatkan nasihat dari Naya dan gurunya untuk menilai ulang cara belajarnya.',
         ], 'D', $dialog);
-        $this->multiSelect($indonesia, 17, 'Tentukan pernyataan yang sesuai dengan realitas kehidupan sehari-hari. Pilih semua yang sesuai.', [
-            'A' => 'Usaha tanpa evaluasi dapat membuat seseorang tidak berkembang.',
-            'B' => 'Hasil belajar selalu mencerminkan kemampuan seseorang secara utuh.',
-            'C' => 'Nasihat dari orang lain dapat membantu seseorang melihat masalah dari sudut pandang berbeda.',
-        ], ['A', 'C'], $dialog);
+        $this->statementGroup($indonesia, 17, 'Tentukan Sesuai atau Tidak Sesuai dengan realitas kehidupan sehari-hari!', [
+            'Usaha tanpa evaluasi dapat membuat seseorang tidak berkembang.' => true,
+            'Hasil belajar selalu mencerminkan kemampuan seseorang secara utuh.' => false,
+            'Nasihat dari orang lain dapat membantu seseorang melihat masalah dari sudut pandang berbeda.' => true,
+        ], 'Sesuai', 'Tidak Sesuai', $dialog);
         $this->multiSelect($indonesia, 18, 'Tokoh dalam cerita tersebut memiliki watak tertentu. Pilih semua pernyataan yang sesuai.', [
             'A' => 'Naya berpikir kritis dan impulsif.',
             'B' => 'Adit bersikap terbuka terhadap nasihat.',
@@ -247,11 +247,11 @@ TEXT);
             'C' => 'Mengeluhkan kesulitan belajar di sekolah baru.',
             'D' => 'Meminta Rani datang ke Bandung.',
         ], 'A', $surat);
-        $this->multiSelect($indonesia, 20, 'Berdasarkan isi surat tersebut, pilih semua pernyataan yang tepat.', [
-            'A' => 'Dina menyesal telah pindah sekolah.',
-            'B' => 'Dina mengalami kesulitan beradaptasi di lingkungan barunya.',
-            'C' => 'Dina belajar bahwa mencoba hal baru membutuhkan keberanian.',
-        ], ['B', 'C'], $surat);
+        $this->statementGroup($indonesia, 20, 'Berdasarkan isi surat tersebut, tentukan Tepat atau Tidak Tepat untuk setiap pernyataan berikut!', [
+            'Dina menyesal telah pindah sekolah.' => false,
+            'Dina mengalami kesulitan beradaptasi di lingkungan barunya.' => true,
+            'Dina belajar bahwa mencoba hal baru membutuhkan keberanian.' => true,
+        ], 'Tepat', 'Tidak Tepat', $surat);
         $this->multipleChoice($indonesia, 21, 'Manakah bukti yang paling kuat bahwa teks tersebut merupakan surat pribadi?', [
             'A' => 'Ditujukan kepada lembaga tertentu.',
             'B' => 'Memuat informasi umum untuk banyak orang.',
@@ -271,11 +271,11 @@ TEXT);
             'C' => 'Menunggu adalah hal yang sia-sia.',
             'D' => 'Setiap kegagalan mengandung pelajaran untuk bangkit.',
         ], 'D', $puisi);
-        $this->multiSelect($indonesia, 24, 'Pilih semua pernyataan yang benar tentang puisi tersebut.', [
-            'A' => 'Puisi menggunakan bahasa konotatif untuk menyampaikan perasaan.',
-            'B' => 'Puisi terdiri atas tiga bait dan setiap bait berisi baris bersajak sama.',
-            'C' => 'Puisi lebih menekankan makna dan perasaan daripada alur cerita.',
-        ], ['A', 'C'], $puisi);
+        $this->statementGroup($indonesia, 24, 'Tentukan Benar atau Salah untuk setiap pernyataan berikut!', [
+            'Puisi menggunakan bahasa konotatif untuk menyampaikan perasaan.' => true,
+            'Puisi terdiri atas tiga bait dan setiap bait berisi baris bersajak sama.' => false,
+            'Puisi lebih menekankan makna dan perasaan daripada alur cerita.' => true,
+        ], 'Benar', 'Salah', $puisi);
 
         $this->multipleChoice($indonesia, 25, 'Kata "sarat" pada kalimat "kalimat yang singkat, padat, namun sarat makna" bermakna ...', [
             'A' => 'Sedikit dan terbatas.',
@@ -288,11 +288,11 @@ TEXT);
             'B' => 'Penulisan Ir. dan Drs. menggunakan huruf kapital sudah tepat karena merupakan gelar.',
             'C' => 'Penulisan tanggal 17 Agustus 1945 sudah tepat karena menggunakan huruf kapital pada nama bulan.',
         ], ['B', 'C'], $proklamasi);
-        $this->multiSelect($indonesia, 27, 'Kesimpulan dari peristiwa proklamasi dapat dilihat dalam teks. Pilih semua pernyataan yang tepat.', [
-            'A' => 'Kemerdekaan Indonesia terjadi secara tiba-tiba tanpa perencanaan tokoh bangsa.',
-            'B' => 'Peristiwa Proklamasi menjadi dasar lahirnya negara Indonesia yang berdaulat.',
-            'C' => 'Proklamasi merupakan wujud keberanian dan kesadaran bangsa untuk menentukan masa depannya sendiri.',
-        ], ['B', 'C'], $proklamasi);
+        $this->statementGroup($indonesia, 27, 'Kesimpulan dari peristiwa proklamasi dapat dilihat dalam teks. Tentukan Tepat atau Tidak Tepat untuk setiap pernyataan berikut!', [
+            'Kemerdekaan Indonesia terjadi secara tiba-tiba tanpa perencanaan tokoh bangsa.' => false,
+            'Peristiwa Proklamasi menjadi dasar lahirnya negara Indonesia yang berdaulat.' => true,
+            'Proklamasi merupakan wujud keberanian dan kesadaran bangsa untuk menentukan masa depannya sendiri.' => true,
+        ], 'Tepat', 'Tidak Tepat', $proklamasi);
 
         $this->multipleChoice($indonesia, 28, 'Manakah kelompok kata berikut yang berhubungan langsung dengan proses fotosintesis?', [
             'A' => 'klorofil - cahaya matahari - karbon dioksida',
@@ -305,11 +305,11 @@ TEXT);
             'B' => 'Karbon dioksida diserap tumbuhan melalui stomata pada daun.',
             'C' => 'Fotosintesis hanya bermanfaat bagi tumbuhan dan tidak berdampak pada makhluk hidup lain.',
         ], ['A', 'B'], $fotosintesis);
-        $this->multiSelect($indonesia, 30, 'Teks tersebut mengandung kalimat fakta. Pilih semua pernyataan yang tepat.', [
-            'A' => 'Fotosintesis terjadi pada daun yang mengandung klorofil.',
-            'B' => 'Semua tumbuhan melakukan fotosintesis tanpa memerlukan cahaya matahari.',
-            'C' => 'Oksigen hasil fotosintesis dibutuhkan oleh manusia dan hewan.',
-        ], ['A', 'C'], $fotosintesis);
+        $this->statementGroup($indonesia, 30, 'Teks tersebut mengandung kalimat fakta. Tentukan fakta dalam pernyataan berikut dengan Tepat atau Tidak Tepat!', [
+            'Fotosintesis terjadi pada daun yang mengandung klorofil.' => true,
+            'Semua tumbuhan melakukan fotosintesis tanpa memerlukan cahaya matahari.' => false,
+            'Oksigen hasil fotosintesis dibutuhkan oleh manusia dan hewan.' => true,
+        ], 'Tepat', 'Tidak Tepat', $fotosintesis);
 
         $matematika = $this->exam([
             'title' => 'TKA SD Matematika - Paket B',
@@ -327,22 +327,22 @@ TEXT);
             'B' => '795 : 15 + 250 x 15 = 3.803',
             'C' => '795 : 15 + 250 x 15 = 4.545',
         ], ['A', 'B']);
-        $this->multiSelect($matematika, 2, 'Untuk membuat 6 dekorasi, pilih semua pernyataan yang benar.', [
-            'A' => 'Aira membutuhkan 30 balon biru.',
-            'B' => 'Aira membutuhkan 45 balon ungu.',
-            'C' => 'Aira membutuhkan 54 balon merah muda.',
-        ], ['A', 'C']);
+        $this->statementGroup($matematika, 2, 'Untuk membuat satu dekorasi ulang tahun dibutuhkan 5 balon biru, 7 balon ungu, dan 9 balon merah muda. Aira ingin membuat 6 dekorasi. Berdasarkan informasi tersebut, tentukan Benar atau Salah setiap pernyataan berikut!', [
+            'Aira membutuhkan 30 balon biru.' => true,
+            'Aira membutuhkan 45 balon ungu.' => false,
+            'Aira membutuhkan 54 balon merah muda.' => true,
+        ], 'Benar', 'Salah');
         $this->multipleChoice($matematika, 3, 'Sebuah pabrik membuat 50 kotak buku tulis. Setiap kotak berisi 20 buku tulis. Jika 25 kotak sudah diantar ke toko, berapa buku tulis yang masih ada di pabrik?', [
             'A' => '250 buku tulis',
             'B' => '500 buku tulis',
             'C' => '745 buku tulis',
             'D' => '980 buku tulis',
         ], 'B');
-        $this->multiSelect($matematika, 4, 'Pak Budi memanen 24 karung padi. Pilih semua pernyataan yang benar.', [
-            'A' => 'Satu karung padi dijual seharga Rp200.000.',
-            'B' => 'Hasil penjualan padi seluruhnya Rp4.800.000.',
-            'C' => 'Total padi yang dipanen Pak Budi adalah 500 kg.',
-        ], ['A', 'B']);
+        $this->statementGroup($matematika, 4, 'Pak Budi memanen 24 karung padi. Setiap karung berisi 25 kg padi. Jika Pak Budi menjual seluruh hasil panennya dengan harga Rp8.000 per kg, tentukan Benar atau Salah setiap pernyataan berikut!', [
+            'Satu karung padi dijual seharga Rp200.000.' => true,
+            'Hasil penjualan padi seluruhnya Rp4.800.000.' => true,
+            'Total padi yang dipanen Pak Budi adalah 500 kg.' => false,
+        ], 'Benar', 'Salah');
         $this->multipleChoice($matematika, 5, 'Hasil dari 0,75 + 40% x 1/2 adalah ...', [
             'A' => '19/20',
             'B' => '15/21',
@@ -366,11 +366,11 @@ TEXT);
             'C' => '5 : 12',
             'D' => '12 : 5',
         ], 'D');
-        $this->multiSelect($matematika, 9, 'Tasya membeli 4 botol minuman. Pilih semua pernyataan yang benar.', [
-            'A' => 'Setiap botol berisi kurang dari 1 liter.',
-            'B' => 'Jumlah seluruh minuman yang dibeli Tasya adalah 3 liter.',
-            'C' => 'Jika Tasya membeli 1 botol lagi, maka jumlah minuman menjadi 4,75 liter.',
-        ], ['A', 'B']);
+        $this->statementGroup($matematika, 9, 'Tasya membeli 4 botol minuman. Setiap botol berisi 0,75 liter. Berdasarkan informasi tersebut, tentukan Benar atau Salah setiap pernyataan berikut!', [
+            'Setiap botol berisi kurang dari 1 liter.' => true,
+            'Jumlah seluruh minuman yang dibeli Tasya adalah 3 liter.' => true,
+            'Jika Tasya membeli 1 botol lagi, maka jumlah minuman menjadi 4,75 liter.' => false,
+        ], 'Benar', 'Salah');
         $this->multipleChoice($matematika, 10, 'Ibu membeli 5 kg beras. Jika sisa beras adalah 20%, berapa kg beras yang telah digunakan?', [
             'A' => '1 kg',
             'B' => '2 kg',
@@ -404,11 +404,11 @@ TEXT);
             'B' => 'Sisa pita yang belum digunakan Indi adalah 2,25 cm.',
             'C' => 'Jika pita yang digunakan adalah 1,5 meter, maka sisa pitanya adalah 2 meter.',
         ], ['A', 'C']);
-        $this->multiSelect($matematika, 16, 'Di sebuah toko terdapat beras 2,4 kg dan gula 850 gram. Pilih semua pernyataan yang benar.', [
-            'A' => 'Berat beras sama dengan 2400 gram.',
-            'B' => 'Total berat beras dan gula adalah 3,5 kg.',
-            'C' => 'Selisih berat beras dan gula adalah 1,55 kg.',
-        ], ['A', 'C']);
+        $this->statementGroup($matematika, 16, 'Di sebuah toko terdapat beras seberat 2,4 kg. Selain itu, terdapat gula seberat 850 gram. Berdasarkan informasi tersebut, tentukan Benar atau Salah setiap pernyataan berikut!', [
+            'Berat beras sama dengan 2400 gram.' => true,
+            'Total berat beras dan gula adalah 3,5 kg.' => false,
+            'Selisih berat beras dan gula adalah 1,55 kg.' => true,
+        ], 'Benar', 'Salah');
         $this->multipleChoice($matematika, 17, 'Sebuah ember memiliki kapasitas 0,02 m3. Ember diisi 15 liter air lalu ditambahkan 3.000 ml. Berapa banyak air yang perlu ditambahkan agar ember penuh?', [
             'A' => '1,5 liter',
             'B' => '2 liter',
@@ -420,11 +420,11 @@ TEXT);
             'B' => 'Kakek Pardi lebih tua daripada Kakek Harno.',
             'C' => 'Selisih usia Kakek Pardi dan Kakek Harno adalah 10 tahun.',
         ], ['B', 'C']);
-        $this->multiSelect($matematika, 19, 'Pak Fatan dan Pak Rafif berangkat ke kantor. Pilih semua pernyataan yang benar.', [
-            'A' => 'Pak Fatan akan tiba di kantor lebih awal daripada Pak Rafif.',
-            'B' => 'Pak Rafif akan tiba di kantor lebih awal daripada Pak Fatan.',
-            'C' => 'Pak Fatan dan Pak Rafif akan tiba di kantor pada waktu yang bersamaan.',
-        ], ['C']);
+        $this->statementGroup($matematika, 19, 'Pak Fatan berangkat ke kantor pada pukul 07.00 dengan kecepatan rata-rata 45 km/jam untuk jarak 15 km. Pak Rafif berangkat pukul 06.50 dengan kecepatan rata-rata 50 km/jam untuk jarak 25 km. Berdasarkan informasi tersebut, tentukan Benar atau Salah setiap pernyataan berikut!', [
+            'Pak Fatan akan tiba di kantor lebih awal daripada Pak Rafif.' => false,
+            'Pak Rafif akan tiba di kantor lebih awal daripada Pak Fatan.' => false,
+            'Pak Fatan dan Pak Rafif akan tiba di kantor pada waktu yang bersamaan.' => true,
+        ], 'Benar', 'Salah');
         $this->multiSelect($matematika, 20, 'Rasyid pergi ke suatu tempat mengendarai mobil dengan kecepatan rata-rata 42 km/jam. Pilih semua pernyataan yang benar.', [
             'A' => 'Pada pukul 08.00, Rasyid sudah menempuh jarak sejauh 21 km.',
             'B' => 'Dalam waktu dua jam, Rasyid sudah menempuh jarak sejauh 42 km.',
@@ -448,11 +448,11 @@ TEXT);
             'C' => '15 persegi',
             'D' => '20 persegi',
         ], 'B');
-        $this->multiSelect($matematika, 24, 'Sebuah aquarium berbentuk balok berukuran 40 cm x 30 cm x 35 cm. Pilih semua pernyataan yang benar.', [
-            'A' => 'Volume aquarium adalah 42.000 cm3.',
-            'B' => 'Dibutuhkan 42 liter air untuk mengisi penuh aquarium.',
-            'C' => 'Jika aquarium telah terisi 20 liter air, maka dibutuhkan tambahan 20 liter air untuk mengisi penuh aquarium hingga penuh.',
-        ], ['A', 'B']);
+        $this->statementGroup($matematika, 24, 'Sebuah aquarium berbentuk balok memiliki ukuran panjang 40 cm, lebar 30 cm, dan tinggi 35 cm. Aquarium tersebut akan diisi air sampai penuh. Berdasarkan informasi tersebut, tentukan Benar atau Salah setiap pernyataan berikut!', [
+            'Volume aquarium adalah 42.000 cm3.' => true,
+            'Dibutuhkan 42 liter air untuk mengisi penuh aquarium.' => true,
+            'Jika aquarium telah terisi 20 liter air, maka dibutuhkan tambahan 20 liter air untuk mengisi aquarium hingga penuh.' => false,
+        ], 'Benar', 'Salah');
         $this->multipleChoice($matematika, 25, 'Bilqis membeli satu kotak jus jeruk dengan ukuran seperti gambar tersebut. Berapakah volumenya?', [
             'A' => '500 ml',
             'B' => '750 ml',
@@ -464,11 +464,11 @@ TEXT);
             'B' => 'Sudut terbesar yang terbentuk pada pukul 15.00 adalah 210 derajat.',
             'C' => 'Sudut terkecil yang terbentuk pada pukul 15.00 sama besar dengan sudut terkecil pada pukul 09.00.',
         ], ['A', 'C']);
-        $this->multiSelect($matematika, 27, 'Perhatikan diagram batang berikut, lalu pilih semua pernyataan yang benar.', [
-            'A' => 'Jumlah pengunjung selama satu minggu ada 58 orang.',
-            'B' => 'Jumlah pengunjung perempuan selama satu minggu lebih banyak dari jumlah pengunjung laki-laki.',
-            'C' => 'Jumlah pengunjung pada hari ke-1 sama dengan jumlah pengunjung pada hari ke-3.',
-        ], ['A', 'C'], null, 10, 'demo/imports/paket-b/mtk-q27.png');
+        $this->statementGroup($matematika, 27, 'Perpustakaan buka dari hari Senin sampai Sabtu. Berdasarkan diagram tersebut, tentukan Benar atau Salah setiap pernyataan berikut!', [
+            'Jumlah pengunjung selama satu minggu ada 58 orang.' => true,
+            'Jumlah pengunjung perempuan selama satu minggu lebih banyak dari jumlah pengunjung laki-laki.' => false,
+            'Jumlah pengunjung pada hari ke-1 sama dengan jumlah pengunjung pada hari ke-3.' => true,
+        ], 'Benar', 'Salah', null, 10, 'demo/imports/paket-b/mtk-q27.png');
         $this->multipleChoice($matematika, 28, "Ukuran seragam siswa kelas enam adalah:\nS M L XL XL L M S S M\nM L S L M L L XL L M\nL S M M S L L S S XL\nUkuran seragam yang paling banyak digunakan oleh siswa kelas enam adalah ...", [
             'A' => 'S',
             'B' => 'M',
@@ -590,13 +590,16 @@ TEXT);
         return $question;
     }
 
-    private function trueFalseGroup(
+    private function statementGroup(
         Exam $exam,
         int $number,
         string $text,
         array $statements,
+        string $positiveLabel,
+        string $negativeLabel,
         ?Stimulus $stimulus = null,
         int $weight = 10,
+        ?string $imagePath = null,
     ): Question {
         $question = Question::updateOrCreate(
             ['exam_id' => $exam->id, 'order_number' => $number],
@@ -604,7 +607,8 @@ TEXT);
                 'stimulus_id' => $stimulus?->id,
                 'type' => 'true_false_group',
                 'question_text' => $text,
-                'answer_key' => null,
+                'image_path' => $imagePath,
+                'answer_key' => json_encode(['positive' => $positiveLabel, 'negative' => $negativeLabel], JSON_UNESCAPED_UNICODE),
                 'score_weight' => $weight,
                 'is_active' => true,
             ],

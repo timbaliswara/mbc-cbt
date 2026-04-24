@@ -120,8 +120,9 @@ new class extends Component
         }
 
         if ($question->usesStatementTruthAnswer()) {
+            $labels = $question->statementTruthLabels();
             $keys = $question->options
-                ->map(fn ($option) => $option->option_text.': '.($option->is_correct ? 'Benar' : 'Salah'))
+                ->map(fn ($option) => $option->option_text.': '.($option->is_correct ? $labels['positive'] : $labels['negative']))
                 ->values()
                 ->all();
 

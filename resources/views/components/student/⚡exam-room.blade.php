@@ -127,9 +127,10 @@ new class extends Component
         if ($question->usesSingleOptionAnswer()) {
             $payload['question_option_id'] = filled($value) ? (int) $value : null;
         } elseif ($question->usesStatementTruthAnswer()) {
+            $labels = $question->statementTruthLabels();
             $selections = collect((array) $value)
                 ->filter(fn ($item, $key) => filled($item) && is_numeric((string) $key))
-                ->map(fn ($item) => in_array($item, ['Benar', 'Salah'], true) ? $item : null)
+                ->map(fn ($item) => in_array($item, [$labels['positive'], $labels['negative']], true) ? $item : null)
                 ->filter()
                 ->all();
 
@@ -383,20 +384,23 @@ new class extends Component
                         @endforeach
                     </div>
                 @elseif ($question->usesStatementTruthAnswer())
+                    @php
+                        $labels = $question->statementTruthLabels();
+                    @endphp
                     <div class="mt-6 overflow-hidden rounded-md border border-zinc-200">
                         <table class="w-full text-left text-sm">
                             <thead class="bg-zinc-50 text-zinc-600">
                                 <tr>
                                     <th class="px-4 py-3 font-semibold">Pernyataan</th>
-                                    <th class="px-4 py-3 text-center font-semibold">Benar</th>
-                                    <th class="px-4 py-3 text-center font-semibold">Salah</th>
+                                    <th class="px-4 py-3 text-center font-semibold">{{ $labels['positive'] }}</th>
+                                    <th class="px-4 py-3 text-center font-semibold">{{ $labels['negative'] }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-100 bg-white">
                                 @foreach ($question->options as $statement)
                                     <tr wire:key="statement-{{ $question->id }}-{{ $statement->id }}">
                                         <td class="px-4 py-4 leading-6 text-zinc-800">{{ $statement->option_text }}</td>
-                                        @foreach (['Benar', 'Salah'] as $choice)
+                                        @foreach ([$labels['positive'], $labels['negative']] as $choice)
                                             <td class="px-4 py-4 text-center">
                                                 <input
                                                     wire:model.live="answers.{{ $question->id }}.{{ $statement->id }}"

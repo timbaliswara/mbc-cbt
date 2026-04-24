@@ -41,9 +41,10 @@ class ExamScoring
 
         if ($question->usesStatementTruthAnswer()) {
             $payload = collect($answer->answer_payload ?? []);
+            $labels = $question->statementTruthLabels();
 
             return $payload->count() === $question->options->count()
-                && $payload->every(fn ($value) => in_array($value, ['Benar', 'Salah'], true));
+                && $payload->every(fn ($value) => in_array($value, [$labels['positive'], $labels['negative']], true));
         }
 
         return filled($answer->answer_text);
@@ -101,12 +102,13 @@ class ExamScoring
             }
 
             if ($question->usesStatementTruthAnswer()) {
+                $labels = $question->statementTruthLabels();
                 $selectedMap = collect($answer?->answer_payload ?? [])
                     ->mapWithKeys(fn ($value, $key) => [(int) $key => (string) $value])
                     ->all();
 
                 $expectedMap = $question->options
-                    ->mapWithKeys(fn ($option) => [$option->id => $option->is_correct ? 'Benar' : 'Salah'])
+                    ->mapWithKeys(fn ($option) => [$option->id => $option->is_correct ? $labels['positive'] : $labels['negative']])
                     ->all();
 
                 ksort($selectedMap);

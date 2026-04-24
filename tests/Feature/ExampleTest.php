@@ -162,6 +162,43 @@ class ExampleTest extends TestCase
             ->assertSee(str($question->stimulus->content)->before("\n")->toString());
     }
 
+    public function test_indonesian_question_six_uses_exact_tepat_tidak_tepat_labels_from_pdf(): void
+    {
+        $this->seed();
+
+        $exam = Exam::with('questions.options')->where('title', 'TKA SD Bahasa Indonesia - Paket B')->firstOrFail();
+        $question = $exam->questions->firstWhere('order_number', 6);
+
+        $this->assertSame('true_false_group', $question->type);
+        $this->assertSame(
+            ['positive' => 'Tepat', 'negative' => 'Tidak Tepat'],
+            $question->statementTruthLabels(),
+        );
+        $this->assertSame('Tepat / Tidak Tepat per pernyataan', $question->typeLabel());
+
+        $student = Student::create(['name' => 'Label Tester']);
+        $token = ExamToken::create([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id,
+            'token' => 'LBLQ06',
+            'status' => 'in_progress',
+        ]);
+        $attempt = ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id,
+            'exam_token_id' => $token->id,
+            'started_at' => now(),
+            'status' => 'in_progress',
+        ]);
+
+        Livewire::test('student.exam-room', ['attempt' => $attempt])
+            ->set('currentIndex', 5)
+            ->assertSee('Soal 6')
+            ->assertSee('Tepat / Tidak Tepat per pernyataan')
+            ->assertSee('Tepat')
+            ->assertSee('Tidak Tepat');
+    }
+
     public function test_exam_room_scores_true_false_question(): void
     {
         $this->seed();

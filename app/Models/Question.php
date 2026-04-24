@@ -88,12 +88,35 @@ class Question extends Model
 
     public function typeLabel(): string
     {
+        if ($this->usesStatementTruthAnswer()) {
+            $labels = $this->statementTruthLabels();
+
+            return $labels['positive'].' / '.$labels['negative'].' per pernyataan';
+        }
+
         return match ($this->type) {
             'multiple_choice_complex' => 'Pilihan ganda kompleks',
-            'true_false_group' => 'Benar / salah per pernyataan',
             'true_false' => 'Benar / salah',
             'essay' => 'Esai',
             default => 'Pilihan ganda',
         };
+    }
+
+    public function statementTruthLabels(): array
+    {
+        if (! $this->usesStatementTruthAnswer()) {
+            return ['positive' => 'Benar', 'negative' => 'Salah'];
+        }
+
+        $labels = json_decode((string) $this->answer_key, true);
+
+        if (! is_array($labels)) {
+            return ['positive' => 'Benar', 'negative' => 'Salah'];
+        }
+
+        return [
+            'positive' => $labels['positive'] ?? 'Benar',
+            'negative' => $labels['negative'] ?? 'Salah',
+        ];
     }
 }
