@@ -167,7 +167,6 @@ class ExampleTest extends TestCase
         $this->seed();
 
         $exam = Exam::with('questions.options')->where('status', 'active')->firstOrFail();
-        $question = $exam->questions->firstWhere('type', 'true_false');
         $student = Student::create(['name' => 'True False Tester']);
         $token = ExamToken::create([
             'exam_id' => $exam->id,
@@ -181,6 +180,21 @@ class ExampleTest extends TestCase
             'started_at' => now(),
             'status' => 'in_progress',
         ]);
+
+        $question = Question::create([
+            'exam_id' => $exam->id,
+            'order_number' => 999,
+            'type' => 'true_false',
+            'question_text' => 'Pernyataan berikut benar atau salah: 2 + 2 = 4.',
+            'answer_key' => 'Benar',
+            'score_weight' => 10,
+            'is_active' => true,
+        ]);
+        $question->options()->createMany([
+            ['label' => 'Benar', 'option_text' => 'Benar', 'is_correct' => true, 'order_number' => 1],
+            ['label' => 'Salah', 'option_text' => 'Salah', 'is_correct' => false, 'order_number' => 2],
+        ]);
+        $question->load('options');
 
         $correctOption = $question->options->firstWhere('is_correct', true);
 
