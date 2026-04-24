@@ -44,8 +44,15 @@ new class extends Component
         $this->refreshProgress();
     }
 
-    public function updatedAnswers($value, string $name): void
+    public function updatedAnswers($value, ?string $name = null): void
     {
+        if (! is_string($name) || $name === '') {
+            $this->refreshProgress();
+            $this->submitWarning = null;
+
+            return;
+        }
+
         $questionId = (int) explode('.', $name)[0];
         $question = $this->questions()->firstWhere('id', $questionId);
 
