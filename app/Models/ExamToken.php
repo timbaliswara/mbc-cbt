@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ExamToken extends Model
@@ -30,8 +31,13 @@ class ExamToken extends Model
         return $this->hasOne(ExamAttempt::class);
     }
 
+    public function attempts(): HasMany
+    {
+        return $this->hasMany(ExamAttempt::class, 'exam_token_id');
+    }
+
     public function canBeUsed(): bool
     {
-        return $this->status === 'unused' && (! $this->expires_at || $this->expires_at->isFuture());
+        return $this->status !== 'cancelled' && (! $this->expires_at || $this->expires_at->isFuture());
     }
 }

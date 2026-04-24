@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\ExamAttempt;
+use App\Support\ExamScoring;
 use Livewire\Component;
 
 new class extends Component
@@ -19,10 +20,15 @@ new class extends Component
         return floor($seconds / 60).' menit';
     }
 
+    public function progressLabel(ExamAttempt $attempt): string
+    {
+        return ExamScoring::progressPercentage($attempt).'%';
+    }
+
     public function with(): array
     {
         $attempts = ExamAttempt::query()
-            ->with(['exam:id,title,passing_grade', 'student:id,name,school,grade,phone', 'result'])
+            ->with(['exam:id,title,passing_grade', 'exam.questions:id,exam_id,score_weight,type,is_active', 'student:id,name,school,grade,phone', 'result', 'answers:id,exam_attempt_id,question_id,question_option_id,answer_text,answer_payload'])
             ->when(trim($this->search) !== '', function ($query) {
                 $search = '%'.trim($this->search).'%';
                 $query->where(function ($query) use ($search) {
@@ -64,13 +70,18 @@ new class extends Component
     </section>
 
     <div class="surface rounded-md p-5">
-        <label class="text-sm font-medium text-zinc-800">Cari hasil</label>
-        <input
-            wire:model.live.debounce.400ms="search"
-            type="search"
-            class="mt-2 w-full rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm"
-            placeholder="Cari nama siswa, sekolah, kelas, nomor HP, atau paket ujian"
-        >
+        <div class="flex flex-wrap items-end justify-between gap-4">
+            <div class="min-w-0 flex-1">
+                <label class="text-sm font-medium text-zinc-800">Cari hasil</label>
+                <input
+                    wire:model.live.debounce.400ms="search"
+                    type="search"
+                    class="mt-2 w-full rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm"
+                    placeholder="Cari nama siswa, sekolah, kelas, nomor HP, atau paket ujian"
+                >
+            </div>
+            <a href="{{ route('admin.results.export', ['search' => $search]) }}" class="rounded-md border border-emerald-200 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50">Download CSV</a>
+        </div>
     </div>
 
     <div class="surface overflow-hidden rounded-md">
@@ -86,6 +97,7 @@ new class extends Component
                         <th class="px-5 py-3">Peserta</th>
                         <th class="px-5 py-3">Paket ujian</th>
                         <th class="px-5 py-3">Status</th>
+                        <th class="px-5 py-3">Progres</th>
                         <th class="px-5 py-3">Benar/Salah/Kosong</th>
                         <th class="px-5 py-3">Nilai</th>
                         <th class="px-5 py-3">Durasi</th>
@@ -115,10 +127,14 @@ new class extends Component
                                     ])>{{ $passLabel }}</span>
                                 </div>
                             </td>
+                            <td class="px-5 py-4 text-zinc-700">
+                                <p class="font-semibold text-zinc-950">{{ $this->progressLabel($attempt) }}</p>
+                                <p class="mt-1 text-xs text-zinc-500">{{ $attempt->answers->count() }} jawaban tersimpan</p>
+                            </td>
                             <td class="px-5 py-4 text-zinc-700">{{ $result?->correct_count ?? 0 }} / {{ $result?->wrong_count ?? 0 }} / {{ $result?->blank_count ?? 0 }}</td>
                             <td class="px-5 py-4">
                                 <p class="font-semibold text-zinc-950">{{ $result?->total_score ?? 0 }}</p>
-                                <p class="mt-1 text-xs text-zinc-500">PG {{ $result?->multiple_choice_score ?? 0 }} · Esai {{ $result?->essay_score ?? 0 }}</p>
+                                <p class="mt-1 text-xs text-zinc-500">PG {{ $result?->multiple_choice_score ?? 0 }} · Esai {{ $result?->essay_score ?? 0 }} · Maks {{ \App\Support\ExamScoring::maxScore($attempt) }}</p>
                             </td>
                             <td class="px-5 py-4 text-zinc-700">{{ $this->durationLabel($attempt) }}</td>
                             <td class="px-5 py-4 text-right">
@@ -127,7 +143,7 @@ new class extends Component
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-5 py-12 text-center text-sm text-zinc-500">Tidak ada hasil yang cocok.</td>
+                            <td colspan="8" class="px-5 py-12 text-center text-sm text-zinc-500">Tidak ada hasil yang cocok.</td>
                         </tr>
                     @endforelse
                 </tbody>

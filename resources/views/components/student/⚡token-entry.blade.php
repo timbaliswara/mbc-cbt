@@ -4,6 +4,7 @@ use Livewire\Component;
 use App\Models\ExamAttempt;
 use App\Models\ExamToken;
 use App\Models\Student;
+use Illuminate\Database\Eloquent\Builder;
 
 new class extends Component
 {
@@ -13,6 +14,8 @@ new class extends Component
     public string $school = '';
     public string $grade = '';
     public string $resultToken = '';
+    public string $resultName = '';
+    public string $resultPhone = '';
 
     public function start()
     {
@@ -27,8 +30,18 @@ new class extends Component
         $token = ExamToken::with('exam')->where('token', strtoupper(trim($data['token'])))->first();
 
         if (! $token || ! $token->canBeUsed() || $token->exam->status !== 'active') {
-            $this->addError('token', 'Token tidak valid, sudah dipakai, kedaluwarsa, atau ujian belum aktif.');
+            $this->addError('token', 'Token belum bisa dipakai. Cek lagi token dari TIM MBC, jadwal ujian, atau masa berlakunya.');
             return;
+        }
+
+        $existingAttempt = $this->findAttemptByIdentity($token, $data);
+
+        if ($existingAttempt?->status === 'in_progress') {
+            return redirect()->route('student.exam', $existingAttempt);
+        }
+
+        if ($existingAttempt?->status === 'finished') {
+            return redirect()->route('student.result', $existingAttempt);
         }
 
         $student = Student::create([
@@ -46,7 +59,7 @@ new class extends Component
             'status' => 'in_progress',
         ]);
 
-        $token->update(['student_id' => $student->id, 'status' => 'in_progress', 'used_at' => now()]);
+        $token->update(['status' => 'active', 'used_at' => now()]);
 
         return redirect()->route('student.exam', $attempt);
     }
@@ -55,25 +68,72 @@ new class extends Component
     {
         $data = $this->validate([
             'resultToken' => ['required', 'string'],
+            'resultName' => ['required', 'string', 'max:255'],
+            'resultPhone' => ['nullable', 'string', 'max:50'],
         ]);
 
-        $token = ExamToken::with('attempt.result')->where('token', strtoupper(trim($data['resultToken'])))->first();
+        $token = ExamToken::with('attempts.result')->where('token', strtoupper(trim($data['resultToken'])))->first();
 
-        if (! $token || ! $token->attempt) {
+        if (! $token) {
             $this->addError('resultToken', 'Token belum ditemukan. Cek lagi token dari TIM MBC.');
             return;
         }
 
-        if ($token->attempt->status === 'in_progress') {
-            return redirect()->route('student.exam', $token->attempt);
+        $attempt = $this->findAttemptByIdentity($token, [
+            'name' => $data['resultName'],
+            'phone' => $data['resultPhone'],
+            'school' => null,
+            'grade' => null,
+        ]);
+
+        if (! $attempt) {
+            $this->addError('resultName', 'Data peserta untuk token ini belum cocok. Gunakan nama yang sama seperti saat mulai ujian.');
+            return;
         }
 
-        if ($token->attempt->status !== 'finished') {
+        if ($attempt->status === 'in_progress') {
+            return redirect()->route('student.exam', $attempt);
+        }
+
+        if ($attempt->status !== 'finished') {
             $this->addError('resultToken', 'Hasil untuk token ini belum tersedia.');
             return;
         }
 
-        return redirect()->route('student.result', $token->attempt);
+        return redirect()->route('student.result', $attempt);
+    }
+
+    private function findAttemptByIdentity(ExamToken $token, array $identity): ?ExamAttempt
+    {
+        $name = trim((string) ($identity['name'] ?? ''));
+        $phone = trim((string) ($identity['phone'] ?? ''));
+        $school = trim((string) ($identity['school'] ?? ''));
+        $grade = trim((string) ($identity['grade'] ?? ''));
+
+        if ($name === '') {
+            return null;
+        }
+
+        return ExamAttempt::query()
+            ->with(['result', 'student'])
+            ->where('exam_token_id', $token->id)
+            ->whereHas('student', function (Builder $query) use ($grade, $name, $phone, $school) {
+                $query->whereRaw('LOWER(name) = ?', [strtolower($name)]);
+
+                if ($phone !== '') {
+                    $query->where('phone', $phone);
+                }
+
+                if ($school !== '') {
+                    $query->whereRaw('LOWER(COALESCE(school, "")) = ?', [strtolower($school)]);
+                }
+
+                if ($grade !== '') {
+                    $query->whereRaw('LOWER(COALESCE(grade, "")) = ?', [strtolower($grade)]);
+                }
+            })
+            ->latest('id')
+            ->first();
     }
 };
 ?>
@@ -95,12 +155,12 @@ new class extends Component
             <div class="rounded-md bg-zinc-950 p-5 text-white">
                 <p class="text-sm font-medium text-emerald-200">Halo, selamat datang di tes MBC</p>
                 <h2 class="mt-2 text-2xl font-semibold tracking-tight">Data peserta</h2>
-                <p class="mt-2 text-sm leading-6 text-zinc-300">Isi data dengan benar ya. Setelah ujian dimulai, token ini akan terkunci untuk satu sesi.</p>
+                <p class="mt-2 text-sm leading-6 text-zinc-300">Isi data dengan benar ya. Token dari TIM MBC bisa dipakai beberapa peserta, jadi nama dan nomor HP ini dipakai untuk melanjutkan ujian atau membuka hasilmu lagi.</p>
             </div>
             <div class="mt-5 grid gap-4">
                 <div>
                     <label class="text-sm font-medium text-zinc-800">Token</label>
-                    <input wire:model="token" class="premium-input mt-2 w-full rounded-md px-3 py-2.5 text-sm uppercase transition" placeholder="XXXX-XXXX-XXXX">
+                    <input wire:model="token" class="premium-input mt-2 w-full rounded-md px-3 py-2.5 text-sm uppercase transition" placeholder="Misal MBCSD1">
                     @error('token') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <input wire:model="name" placeholder="Nama lengkap" class="premium-input rounded-md px-3 py-2.5 text-sm">
@@ -116,12 +176,17 @@ new class extends Component
 
         <form wire:submit="checkResult" class="surface rounded-md border border-emerald-100 p-5 shadow-sm">
             <p class="text-sm font-semibold text-zinc-950">Sudah pernah mengerjakan?</p>
-            <p class="mt-2 text-sm leading-6 text-zinc-600">Masukkan token yang sama untuk melihat hasil ujian. Kalau ujian belum selesai, kamu akan diarahkan kembali ke ruang ujian.</p>
-            <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+            <p class="mt-2 text-sm leading-6 text-zinc-600">Masukkan token dan nama peserta yang sama. Kalau ujian belum selesai, kamu akan masuk lagi ke ruang ujian. Kalau sudah selesai, hasilnya langsung terbuka.</p>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
                 <input wire:model="resultToken" class="premium-input w-full rounded-md px-3 py-2.5 text-sm uppercase transition" placeholder="Token yang sudah dipakai">
+                <input wire:model="resultName" class="premium-input w-full rounded-md px-3 py-2.5 text-sm transition" placeholder="Nama peserta">
+            </div>
+            <div class="mt-3 flex flex-col gap-3 sm:flex-row">
+                <input wire:model="resultPhone" class="premium-input w-full rounded-md px-3 py-2.5 text-sm transition" placeholder="Nomor HP yang sama (kalau tadi diisi)">
                 <button class="rounded-md border border-emerald-200 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50">Cek hasil</button>
             </div>
             @error('resultToken') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+            @error('resultName') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
         </form>
     </div>
 </section>

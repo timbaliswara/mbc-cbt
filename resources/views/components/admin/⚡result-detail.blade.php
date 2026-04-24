@@ -2,6 +2,7 @@
 
 use App\Models\ExamAttempt;
 use App\Models\StudentAnswer;
+use App\Support\ExamScoring;
 use Livewire\Component;
 
 new class extends Component
@@ -16,7 +17,7 @@ new class extends Component
         $this->loadAttempt();
 
         foreach ($this->attempt->answers as $answer) {
-            if (! $answer->question?->isMultipleChoice()) {
+            if ($answer->question?->isEssay()) {
                 $this->essayScores[$answer->id] = (int) $answer->score;
             }
         }
@@ -26,7 +27,7 @@ new class extends Component
     {
         $answer = $this->attempt->answers->firstWhere('id', $answerId) ?? StudentAnswer::findOrFail($answerId);
 
-        if ((int) $answer->exam_attempt_id !== (int) $this->attempt->id || $answer->question?->isMultipleChoice()) {
+        if ((int) $answer->exam_attempt_id !== (int) $this->attempt->id || ! $answer->question?->isEssay()) {
             return;
         }
 
@@ -55,11 +56,11 @@ new class extends Component
 
     public function answerStatus(StudentAnswer $answer): string
     {
-        if (! $answer->exists || (! $answer->question_option_id && ! $answer->answer_text)) {
+        if (! $answer->exists || ! ExamScoring::answerIsFilled($answer->question, $answer)) {
             return 'Kosong';
         }
 
-        if (! $answer->question?->isMultipleChoice()) {
+        if ($answer->question?->isEssay()) {
             return 'Esai';
         }
 
@@ -72,8 +73,21 @@ new class extends Component
             return '-';
         }
 
-        if ($answer->question?->isMultipleChoice()) {
-            return trim(($answer->option?->label ? $answer->option->label.'. ' : '').($answer->option?->option_text ?? '-'));
+        if ($answer->question?->usesSingleOptionAnswer()) {
+            $prefix = $answer->question?->isTrueFalse() ? '' : (($answer->option?->label ? $answer->option->label.'. ' : ''));
+
+            return trim($prefix.($answer->option?->option_text ?? '-'));
+        }
+
+        if ($answer->question?->usesMultipleOptionAnswer()) {
+            $selectedIds = ExamScoring::selectedOptionIds($answer);
+            $labels = $answer->question->options
+                ->whereIn('id', $selectedIds)
+                ->map(fn ($option) => trim($option->label.'. '.$option->option_text))
+                ->values()
+                ->all();
+
+            return $labels !== [] ? implode(', ', $labels) : '-';
         }
 
         return $answer->answer_text ?: '-';
@@ -87,13 +101,21 @@ new class extends Component
             return '-';
         }
 
-        if (! $question->isMultipleChoice()) {
+        if ($question->isEssay()) {
             return $question->answer_key ?: 'Dinilai manual';
         }
 
-        $key = $question->options->firstWhere('is_correct', true);
+        $keys = $question->options
+            ->where('is_correct', true)
+            ->map(function ($option) use ($question) {
+                $prefix = $question->isTrueFalse() ? '' : ($option->label.'. ');
 
-        return $key ? trim($key->label.'. '.$key->option_text) : '-';
+                return trim($prefix.$option->option_text);
+            })
+            ->values()
+            ->all();
+
+        return $keys !== [] ? implode(', ', $keys) : '-';
     }
 
     private function loadAttempt(): void
@@ -112,56 +134,19 @@ new class extends Component
     {
         $this->attempt->loadMissing(['result', 'exam.questions.options', 'answers.question.options', 'answers.option']);
 
-        $correct = 0;
-        $wrong = 0;
-        $blank = 0;
-        $multipleChoiceScore = 0;
-        $essayScore = 0;
-        $hasEssay = false;
-        $hasPendingEssay = false;
-        $answers = $this->attempt->answers->keyBy('question_id');
-
-        foreach ($this->attempt->exam->questions->where('is_active', true) as $question) {
-            $answer = $answers->get($question->id);
-
-            if (! $answer || (! $answer->question_option_id && ! $answer->answer_text)) {
-                $blank++;
-                continue;
-            }
-
-            if ($question->isMultipleChoice()) {
-                $option = $question->options->firstWhere('id', (int) $answer->question_option_id);
-                $isCorrect = (bool) $option?->is_correct;
-                $score = $isCorrect ? $question->score_weight : 0;
-
-                $answer->update(['is_correct' => $isCorrect, 'score' => $score]);
-                $isCorrect ? $correct++ : $wrong++;
-                $multipleChoiceScore += $score;
-
-                continue;
-            }
-
-            $hasEssay = true;
-            $essayScore += (int) $answer->score;
-
-            if ((int) $answer->score === 0) {
-                $hasPendingEssay = true;
-            }
-        }
-
-        $totalScore = $multipleChoiceScore + $essayScore;
+        $summary = ExamScoring::evaluateAttempt($this->attempt);
 
         $this->attempt->result()->updateOrCreate(
             ['exam_attempt_id' => $this->attempt->id],
             [
-                'correct_count' => $correct,
-                'wrong_count' => $wrong,
-                'blank_count' => $blank,
-                'multiple_choice_score' => $multipleChoiceScore,
-                'essay_score' => $essayScore,
-                'total_score' => $totalScore,
-                'is_passed' => $this->attempt->exam->passing_grade ? $totalScore >= $this->attempt->exam->passing_grade : null,
-                'essay_status' => $hasEssay ? ($hasPendingEssay ? 'pending' : 'scored') : 'not_needed',
+                'correct_count' => $summary['correct_count'],
+                'wrong_count' => $summary['wrong_count'],
+                'blank_count' => $summary['blank_count'],
+                'multiple_choice_score' => $summary['multiple_choice_score'],
+                'essay_score' => $summary['essay_score'],
+                'total_score' => $summary['total_score'],
+                'is_passed' => $this->attempt->exam->passing_grade ? $summary['total_score'] >= $this->attempt->exam->passing_grade : null,
+                'essay_status' => $summary['has_essay'] ? ($summary['has_pending_essay'] ? 'pending' : 'scored') : 'not_needed',
             ],
         );
     }
@@ -173,6 +158,7 @@ new class extends Component
         $result = $attempt->result;
         $answersByQuestion = $attempt->answers->keyBy('question_id');
         $passLabel = is_null($result?->is_passed) ? 'Tanpa passing grade' : ($result->is_passed ? 'Lulus' : 'Belum lulus');
+        $maxScore = \App\Support\ExamScoring::maxScore($attempt);
     @endphp
 
     <section class="hero-panel rounded-md p-6 shadow-2xl shadow-emerald-950/10">
@@ -184,7 +170,7 @@ new class extends Component
                 <p class="mt-3 text-sm leading-6 text-emerald-50/75">{{ $attempt->exam->title }} · {{ $attempt->student->school ?: 'Sekolah belum diisi' }} · {{ $attempt->student->grade ?: 'Kelas -' }}</p>
             </div>
             <div class="rounded-md border border-white/15 bg-white/10 p-4 text-sm text-emerald-50/80 backdrop-blur">
-                <p class="font-semibold text-white">Nilai total {{ $result?->total_score ?? 0 }}</p>
+                <p class="font-semibold text-white">Nilai total {{ $result?->total_score ?? 0 }} / {{ $maxScore }}</p>
                 <p class="mt-1">{{ $passLabel }}</p>
             </div>
         </div>
@@ -209,7 +195,7 @@ new class extends Component
         <div class="surface rounded-md p-5">
             <p class="text-sm text-zinc-500">Paket soal</p>
             <p class="mt-2 text-2xl font-semibold text-zinc-950">{{ $attempt->exam->questions->count() }}</p>
-            <p class="mt-1 text-xs text-zinc-500">Passing grade {{ $attempt->exam->passing_grade ?? '-' }}</p>
+            <p class="mt-1 text-xs text-zinc-500">Passing grade {{ $attempt->exam->passing_grade ?? '-' }} · Maks {{ $maxScore }}</p>
         </div>
     </section>
 
@@ -239,7 +225,7 @@ new class extends Component
                         @endphp
                         <tr>
                             <td class="max-w-xl px-5 py-5">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Nomor {{ $question->order_number }} · {{ $question->isMultipleChoice() ? 'Pilihan ganda' : 'Esai' }}</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Nomor {{ $question->order_number }} · {{ $question->typeLabel() }}</p>
                                 @if ($question->stimulus)
                                     <div class="mt-3 rounded-md border border-emerald-100 bg-emerald-50/70 p-3 text-xs leading-5 text-emerald-950">
                                         <p class="font-semibold uppercase tracking-wide text-emerald-700">Stimulus dari TIM MBC</p>
@@ -268,7 +254,7 @@ new class extends Component
                             </td>
                             <td class="px-5 py-5 text-zinc-700">
                                 <p class="max-w-md leading-6">{{ $this->keyText($answer) }}</p>
-                                @php($keyOption = $question->isMultipleChoice() ? $question->options->firstWhere('is_correct', true) : null)
+                                @php($keyOption = $question->usesSingleOptionAnswer() ? $question->options->firstWhere('is_correct', true) : null)
                                 @if ($keyOption?->image_path)
                                     <img src="{{ Storage::url($keyOption->image_path) }}" class="mt-3 max-h-32 rounded-md border border-zinc-200 object-contain" alt="Gambar kunci">
                                 @endif
@@ -283,13 +269,13 @@ new class extends Component
                                 ])>{{ $status }}</span>
                             </td>
                             <td class="min-w-44 px-5 py-5">
-                                @if (! $question->isMultipleChoice() && $answer->exists)
+                                @if ($question->isEssay() && $answer->exists)
                                     <div class="flex items-center gap-2">
                                         <input wire:model="essayScores.{{ $answer->id }}" type="number" min="0" max="{{ $question->score_weight }}" class="w-20 rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
                                         <button wire:click="saveEssay({{ $answer->id }})" class="rounded-md bg-emerald-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800">Simpan</button>
                                     </div>
                                     <p class="mt-2 text-xs text-zinc-500">Maksimal {{ $question->score_weight }}</p>
-                                @elseif (! $question->isMultipleChoice())
+                                @elseif ($question->isEssay())
                                     <p class="text-sm text-zinc-500">Belum dijawab</p>
                                 @else
                                     <p class="font-semibold text-zinc-950">{{ $answer->score ?? 0 }}</p>

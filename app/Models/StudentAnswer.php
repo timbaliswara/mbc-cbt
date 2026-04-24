@@ -12,6 +12,7 @@ class StudentAnswer extends Model
         'question_id',
         'question_option_id',
         'answer_text',
+        'answer_payload',
         'is_flagged',
         'is_correct',
         'score',
@@ -19,7 +20,11 @@ class StudentAnswer extends Model
 
     protected function casts(): array
     {
-        return ['is_flagged' => 'boolean', 'is_correct' => 'boolean'];
+        return [
+            'answer_payload' => 'array',
+            'is_flagged' => 'boolean',
+            'is_correct' => 'boolean',
+        ];
     }
 
     public function attempt(): BelongsTo

@@ -27,8 +27,9 @@ new class extends Component
         for ($i = 0; $i < $data['quantity']; $i++) {
             ExamToken::create([
                 'exam_id' => $data['exam_id'],
-                'token' => strtoupper(Str::random(4).'-'.Str::random(4).'-'.Str::random(4)),
+                'token' => $this->generateTokenCode(),
                 'expires_at' => $data['expires_at'] ?: null,
+                'status' => 'active',
             ]);
         }
 
@@ -41,11 +42,20 @@ new class extends Component
         ExamToken::findOrFail($id)->update(['status' => 'cancelled']);
     }
 
+    private function generateTokenCode(): string
+    {
+        do {
+            $token = strtoupper(Str::random(6));
+        } while (ExamToken::where('token', $token)->exists());
+
+        return $token;
+    }
+
     public function with(): array
     {
         return [
             'exams' => Exam::latest()->get(),
-            'tokens' => ExamToken::with(['exam', 'student'])->latest()->limit(100)->get(),
+            'tokens' => ExamToken::with(['exam'])->withCount('attempts')->latest()->limit(100)->get(),
         ];
     }
 };
@@ -54,7 +64,7 @@ new class extends Component
 <div class="grid gap-6 xl:grid-cols-[0.7fr_1.3fr]">
     <form wire:submit="generate" class="rounded-md border border-zinc-200 bg-white p-5 shadow-sm">
         <h2 class="text-base font-semibold text-zinc-950">Buat token peserta</h2>
-        <p class="mt-1 text-sm text-zinc-500">Token diberikan setelah pembayaran manual dikonfirmasi oleh TIM MBC.</p>
+        <p class="mt-1 text-sm text-zinc-500">Token diberikan setelah pembayaran manual dikonfirmasi oleh TIM MBC. Satu token sekarang bisa dipakai beberapa siswa untuk paket ujian yang sama.</p>
         @if (session('message'))
             <div class="mt-4 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">{{ session('message') }}</div>
         @endif
@@ -75,6 +85,7 @@ new class extends Component
                 </div>
             </div>
             <button class="rounded-md bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800">Buat token</button>
+            <p class="text-xs leading-5 text-zinc-500">Format token dibuat lebih singkat, 6 karakter huruf kapital, supaya lebih enak dikirim lewat chat.</p>
         </div>
     </form>
 
@@ -86,17 +97,17 @@ new class extends Component
         <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
                 <thead class="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500">
-                    <tr><th class="px-5 py-3">Token</th><th class="px-5 py-3">Ujian</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Siswa</th><th class="px-5 py-3"></th></tr>
+                    <tr><th class="px-5 py-3">Token</th><th class="px-5 py-3">Ujian</th><th class="px-5 py-3">Status</th><th class="px-5 py-3">Dipakai</th><th class="px-5 py-3"></th></tr>
                 </thead>
                 <tbody class="divide-y divide-zinc-100">
                     @forelse ($tokens as $token)
                         <tr>
                             <td class="px-5 py-4 font-mono font-semibold text-zinc-950">{{ $token->token }}</td>
                             <td class="px-5 py-4 text-zinc-600">{{ $token->exam->title }}</td>
-                            <td class="px-5 py-4"><span class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">{{ $token->status }}</span></td>
-                            <td class="px-5 py-4 text-zinc-600">{{ $token->student?->name ?? '-' }}</td>
+                            <td class="px-5 py-4"><span class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">{{ $token->status === 'active' ? 'aktif' : $token->status }}</span></td>
+                            <td class="px-5 py-4 text-zinc-600">{{ $token->attempts_count }} sesi</td>
                             <td class="px-5 py-4 text-right">
-                                @if ($token->status === 'unused')
+                                @if ($token->status !== 'cancelled')
                                     <button wire:click="cancel({{ $token->id }})" class="rounded-md border border-red-200 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50">Batalkan</button>
                                 @endif
                             </td>

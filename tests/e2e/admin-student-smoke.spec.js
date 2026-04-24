@@ -64,7 +64,7 @@ test.describe('MBC CBT smoke flow', () => {
     await expect(page.getByText('Masukkan token dari TIM MBC')).toBeVisible();
     await expect(page.getByText('Sudah pernah mengerjakan?')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Cek hasil' })).toBeVisible();
-    await page.getByPlaceholder('XXXX-XXXX-XXXX').fill(token);
+    await page.getByPlaceholder('Misal MBCSD1').fill(token);
     await page.getByPlaceholder('Nama lengkap').fill(studentName);
     await page.getByPlaceholder('Kelas').fill('6');
     await page.getByPlaceholder('Nomor HP').fill('081234567890');

@@ -9,11 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ExamAttempt extends Model
 {
-    protected $fillable = ['exam_id', 'student_id', 'exam_token_id', 'started_at', 'finished_at', 'status'];
+    protected $fillable = ['exam_id', 'student_id', 'exam_token_id', 'started_at', 'finished_at', 'status', 'focus_violation_count'];
 
     protected function casts(): array
     {
-        return ['started_at' => 'datetime', 'finished_at' => 'datetime'];
+        return ['started_at' => 'datetime', 'finished_at' => 'datetime', 'focus_violation_count' => 'integer'];
     }
 
     public function exam(): BelongsTo

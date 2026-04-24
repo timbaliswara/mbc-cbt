@@ -68,6 +68,8 @@ class DatabaseSeeder extends Seeder
                 'D' => 'demo/options/persegi-panjang.svg',
             ],
         );
+        $this->trueFalse($sdMath, 10, 'Pernyataan berikut benar atau salah: 1/2 sama dengan 2/4.', 'Benar', null, 10);
+        $this->multipleChoiceComplex($sdMath, 11, 'Pilih semua bangun datar yang memiliki empat sisi.', ['A' => 'Persegi', 'B' => 'Segitiga', 'C' => 'Persegi panjang', 'D' => 'Lingkaran'], ['A', 'C'], null, 10);
 
         $smpScience = $this->exam([
             'title' => 'Try Out CBT SMP IPA',
@@ -95,6 +97,8 @@ class DatabaseSeeder extends Seeder
         $this->multipleChoice($smpScience, 4, 'Organ yang berfungsi menyaring darah dan menghasilkan urine adalah ...', ['A' => 'Paru-paru', 'B' => 'Hati', 'C' => 'Ginjal', 'D' => 'Jantung'], 'C');
         $this->multipleChoice($smpScience, 5, 'Perubahan energi pada lampu senter adalah ...', ['A' => 'Kimia menjadi cahaya', 'B' => 'Panas menjadi gerak', 'C' => 'Cahaya menjadi listrik', 'D' => 'Gerak menjadi bunyi'], 'A');
         $this->essay($smpScience, 6, 'Jelaskan mengapa keseimbangan ekosistem dapat terganggu jika salah satu populasi dalam rantai makanan berubah drastis.', $ecosystemStimulus, 15);
+        $this->trueFalse($smpScience, 7, 'Pernyataan berikut benar atau salah: Ginjal berfungsi menyaring darah.', 'Benar', null, 10);
+        $this->multipleChoiceComplex($smpScience, 8, 'Pilih semua contoh sumber energi terbarukan.', ['A' => 'Matahari', 'B' => 'Angin', 'C' => 'Batu bara', 'D' => 'Air'], ['A', 'B', 'D'], null, 10);
 
         $sdIndonesian = $this->exam([
             'title' => 'Tes Diagnostik SD Bahasa Indonesia',
@@ -114,9 +118,9 @@ class DatabaseSeeder extends Seeder
         $this->multipleChoice($sdIndonesian, 3, 'Antonim kata bersih adalah ...', ['A' => 'Kotor', 'B' => 'Indah', 'C' => 'Rapi', 'D' => 'Hijau'], 'A');
         $this->essay($sdIndonesian, 4, 'Tulislah satu kalimat ajakan untuk menjaga kebersihan sekolah.', $readingStimulus, 10);
 
-        $this->tokens($sdMath, ['DEMO-TEST-2026', 'SD-MTK-0001', 'SD-MTK-0002']);
-        $this->tokens($smpScience, ['SMP-IPA-0001', 'SMP-IPA-0002']);
-        $this->tokens($sdIndonesian, ['SD-BINDO-0001', 'SD-BINDO-0002']);
+        $this->tokens($sdMath, ['MBCSD1', 'MBCSD2', 'MBCSD3']);
+        $this->tokens($smpScience, ['MBCIP1', 'MBCIP2']);
+        $this->tokens($sdIndonesian, ['MBCBI1', 'MBCBI2']);
 
         $this->dummyFinishedAttempt($sdMath, 'Nadia Putri', 'SD Harapan Bangsa', '6', 40, 10, 50);
         $this->dummyFinishedAttempt($smpScience, 'Rafi Pratama', 'SMP Negeri 2', '9', 50, 12, 62);
@@ -130,7 +134,7 @@ class DatabaseSeeder extends Seeder
                 'starts_at' => now()->subDay(),
                 'ends_at' => now()->addWeeks(2),
                 'status' => 'active',
-                'instructions' => 'Baca soal dengan teliti. Jawaban otomatis tersimpan saat dipilih atau diketik. Submit ujian sebelum waktu habis.',
+                'instructions' => 'Baca soal dengan teliti. Jawaban otomatis tersimpan saat dipilih atau diketik. Kumpulkan ujian sebelum waktu habis.',
                 'shuffle_questions' => false,
                 'shuffle_options' => false,
             ], $data),
@@ -190,12 +194,67 @@ class DatabaseSeeder extends Seeder
         );
     }
 
+    private function trueFalse(Exam $exam, int $number, string $text, string $answerKey, ?Stimulus $stimulus = null, int $weight = 10): Question
+    {
+        $question = Question::updateOrCreate(
+            ['exam_id' => $exam->id, 'order_number' => $number],
+            [
+                'stimulus_id' => $stimulus?->id,
+                'type' => 'true_false',
+                'question_text' => $text,
+                'answer_key' => $answerKey,
+                'score_weight' => $weight,
+                'is_active' => true,
+            ],
+        );
+
+        $question->options()->delete();
+        foreach (['Benar', 'Salah'] as $index => $label) {
+            $question->options()->create([
+                'label' => $label,
+                'option_text' => $label,
+                'is_correct' => $label === $answerKey,
+                'order_number' => $index + 1,
+            ]);
+        }
+
+        return $question;
+    }
+
+    private function multipleChoiceComplex(Exam $exam, int $number, string $text, array $options, array $correctKeys, ?Stimulus $stimulus = null, int $weight = 10): Question
+    {
+        $question = Question::updateOrCreate(
+            ['exam_id' => $exam->id, 'order_number' => $number],
+            [
+                'stimulus_id' => $stimulus?->id,
+                'type' => 'multiple_choice_complex',
+                'question_text' => $text,
+                'answer_key' => implode(',', $correctKeys),
+                'score_weight' => $weight,
+                'is_active' => true,
+            ],
+        );
+
+        $question->options()->delete();
+        foreach ($options as $index => $optionText) {
+            $label = is_string($index) ? $index : chr(65 + $index);
+            $question->options()->create([
+                'label' => $label,
+                'option_text' => $optionText,
+                'is_correct' => in_array($label, $correctKeys, true),
+                'order_number' => array_search($label, ['A', 'B', 'C', 'D', 'E'], true) + 1,
+            ]);
+        }
+
+        return $question;
+    }
+
     private function tokens(Exam $exam, array $tokens): void
     {
         foreach ($tokens as $token) {
             ExamToken::firstOrCreate(
                 ['token' => $token],
-                ['exam_id' => $exam->id, 'status' => 'unused', 'expires_at' => now()->addWeeks(2)],
+                ['exam_id' => $exam->id, 'status' => 'active', 'expires_at' => now()->addWeeks(2)],
             );
         }
     }
@@ -209,7 +268,7 @@ class DatabaseSeeder extends Seeder
 
         $token = ExamToken::firstOrCreate(
             ['token' => 'USED-'.$exam->id.'-'.$student->id],
-            ['exam_id' => $exam->id, 'student_id' => $student->id, 'status' => 'used', 'used_at' => now()->subHours(2)],
+            ['exam_id' => $exam->id, 'student_id' => $student->id, 'status' => 'active', 'used_at' => now()->subHours(2)],
         );
 
         $attempt = ExamAttempt::updateOrCreate(

@@ -50,4 +50,39 @@ class Question extends Model
     {
         return $this->type === 'multiple_choice';
     }
+
+    public function isTrueFalse(): bool
+    {
+        return $this->type === 'true_false';
+    }
+
+    public function isMultipleChoiceComplex(): bool
+    {
+        return $this->type === 'multiple_choice_complex';
+    }
+
+    public function isEssay(): bool
+    {
+        return $this->type === 'essay';
+    }
+
+    public function usesSingleOptionAnswer(): bool
+    {
+        return in_array($this->type, ['multiple_choice', 'true_false'], true);
+    }
+
+    public function usesMultipleOptionAnswer(): bool
+    {
+        return $this->type === 'multiple_choice_complex';
+    }
+
+    public function typeLabel(): string
+    {
+        return match ($this->type) {
+            'multiple_choice_complex' => 'Pilihan ganda kompleks',
+            'true_false' => 'Benar / salah',
+            'essay' => 'Esai',
+            default => 'Pilihan ganda',
+        };
+    }
 }

@@ -6,6 +6,7 @@ use App\Models\ExamAttempt;
 use App\Models\ExamResult;
 use App\Models\ExamToken;
 use App\Models\Question;
+use App\Support\ExamScoring;
 
 new class extends Component
 {
@@ -17,7 +18,7 @@ new class extends Component
             'tokenCount' => ExamToken::count(),
             'attemptCount' => ExamAttempt::count(),
             'pendingEssays' => ExamResult::where('essay_status', 'pending')->count(),
-            'latestAttempts' => ExamAttempt::with(['exam', 'student', 'result'])->latest()->limit(6)->get(),
+            'latestAttempts' => ExamAttempt::with(['exam.questions', 'student', 'result', 'answers'])->latest()->limit(6)->get(),
         ];
     }
 };
@@ -66,6 +67,7 @@ new class extends Component
                             <th class="px-5 py-3">Siswa</th>
                             <th class="px-5 py-3">Ujian</th>
                             <th class="px-5 py-3">Status</th>
+                            <th class="px-5 py-3">Progres</th>
                             <th class="px-5 py-3">Nilai</th>
                         </tr>
                     </thead>
@@ -75,10 +77,11 @@ new class extends Component
                                 <td class="px-5 py-4 font-medium text-zinc-950">{{ $attempt->student->name }}</td>
                                 <td class="px-5 py-4 text-zinc-600">{{ $attempt->exam->title }}</td>
                                 <td class="px-5 py-4"><span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800">{{ $attempt->status }}</span></td>
+                                <td class="px-5 py-4 text-zinc-600">{{ ExamScoring::progressPercentage($attempt) }}%</td>
                                 <td class="px-5 py-4 text-zinc-600">{{ $attempt->result?->total_score ?? '-' }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="px-5 py-10 text-center text-zinc-500">Belum ada sesi ujian.</td></tr>
+                            <tr><td colspan="5" class="px-5 py-10 text-center text-zinc-500">Belum ada sesi ujian.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

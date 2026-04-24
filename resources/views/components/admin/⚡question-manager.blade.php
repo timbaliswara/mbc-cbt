@@ -17,6 +17,7 @@ new class extends Component
     public string $type = 'multiple_choice';
     public string $question_text = '';
     public string $answer_key = 'A';
+    public array $correctOptions = ['A'];
     public int $score_weight = 1;
     public string $explanation = '';
     public $questionImage;
@@ -73,13 +74,22 @@ new class extends Component
             'exam_id' => ['required', 'exists:exams,id'],
             'stimulus_id' => ['nullable', 'exists:stimuli,id'],
             'order_number' => ['required', 'integer', 'min:1'],
-            'type' => ['required', 'in:multiple_choice,essay'],
+            'type' => ['required', 'in:multiple_choice,multiple_choice_complex,true_false,essay'],
             'question_text' => ['required', 'string'],
-            'answer_key' => ['nullable', 'in:A,B,C,D,E'],
             'score_weight' => ['required', 'integer', 'min:1'],
             'explanation' => ['nullable', 'string'],
             'questionImage' => ['nullable', 'image', 'max:2048'],
         ]);
+
+        if (in_array($data['type'], ['multiple_choice', 'true_false'], true) && ! filled($this->answer_key)) {
+            $this->addError('answer_key', 'Pilih jawaban yang benar.');
+            return;
+        }
+
+        if ($data['type'] === 'multiple_choice_complex' && count(array_filter($this->correctOptions)) === 0) {
+            $this->addError('correctOptions', 'Pilih minimal satu jawaban benar.');
+            return;
+        }
 
         $payload = [
             'exam_id' => $data['exam_id'],
@@ -87,7 +97,7 @@ new class extends Component
             'order_number' => $data['order_number'],
             'type' => $data['type'],
             'question_text' => $data['question_text'],
-            'answer_key' => $data['type'] === 'multiple_choice' ? $data['answer_key'] : null,
+            'answer_key' => $this->compiledAnswerKey(),
             'score_weight' => $data['score_weight'],
             'explanation' => $data['explanation'],
             'is_active' => true,
@@ -102,10 +112,15 @@ new class extends Component
         $question = Question::updateOrCreate(['id' => $this->editingId], $payload);
         $question->options()->delete();
 
-        if ($question->type === 'multiple_choice') {
-            foreach (['A', 'B', 'C', 'D', 'E'] as $index => $label) {
+        if ($question->usesSingleOptionAnswer() || $question->usesMultipleOptionAnswer()) {
+            foreach ($this->optionLabels() as $index => $label) {
+                if ($question->isTrueFalse()) {
+                    $text = $label;
+                    $image = null;
+                } else {
                 $text = trim($this->optionTexts[$label] ?? '');
                 $image = $this->optionImages[$label] ?? null;
+                }
 
                 if ($text === '' && ! $image) {
                     continue;
@@ -115,7 +130,7 @@ new class extends Component
                     'label' => $label,
                     'option_text' => $text ?: null,
                     'image_path' => $image ? $image->store('options', 'public') : ($this->existingOptionImages[$label] ?? null),
-                    'is_correct' => $this->answer_key === $label,
+                    'is_correct' => $this->isCorrectOption($label),
                     'order_number' => $index + 1,
                 ]);
             }
@@ -135,6 +150,7 @@ new class extends Component
         $this->type = $question->type;
         $this->question_text = $question->question_text;
         $this->answer_key = $question->answer_key ?: 'A';
+        $this->correctOptions = $question->options->where('is_correct', true)->pluck('label')->values()->all() ?: ['A'];
         $this->score_weight = $question->score_weight;
         $this->explanation = (string) $question->explanation;
         $this->existingQuestionImage = $question->image_path;
@@ -159,9 +175,49 @@ new class extends Component
         $this->reset(['editingId', 'stimulus_id', 'question_text', 'explanation', 'questionImage', 'existingQuestionImage', 'optionImages', 'existingOptionImages']);
         $this->type = 'multiple_choice';
         $this->answer_key = 'A';
+        $this->correctOptions = ['A'];
         $this->score_weight = 1;
         $this->optionTexts = ['A' => '', 'B' => '', 'C' => '', 'D' => '', 'E' => ''];
         $this->order_number = (Question::where('exam_id', $this->exam_id)->max('order_number') ?? 0) + 1;
+    }
+
+    public function updatedType(string $value): void
+    {
+        if ($value === 'true_false') {
+            $this->answer_key = 'Benar';
+            $this->correctOptions = ['Benar'];
+            return;
+        }
+
+        if ($value === 'multiple_choice_complex') {
+            $this->correctOptions = $this->correctOptions === [] ? ['A'] : array_values(array_unique($this->correctOptions));
+            return;
+        }
+
+        $this->answer_key = in_array($this->answer_key, ['A', 'B', 'C', 'D', 'E'], true) ? $this->answer_key : 'A';
+    }
+
+    private function compiledAnswerKey(): ?string
+    {
+        return match ($this->type) {
+            'multiple_choice', 'true_false' => $this->answer_key,
+            'multiple_choice_complex' => implode(',', array_values(array_unique(array_filter($this->correctOptions)))),
+            default => null,
+        };
+    }
+
+    private function optionLabels(): array
+    {
+        return $this->type === 'true_false' ? ['Benar', 'Salah'] : ['A', 'B', 'C', 'D', 'E'];
+    }
+
+    private function isCorrectOption(string $label): bool
+    {
+        if ($this->type === 'multiple_choice_complex') {
+            return in_array($label, $this->correctOptions, true);
+        }
+
+        return $this->answer_key === $label;
     }
 
     public function with(): array
@@ -235,12 +291,23 @@ new class extends Component
                     </div>
                     <div class="mt-4 grid gap-4">
                         <div class="grid gap-4 sm:grid-cols-3">
-                            <input wire:model="order_number" type="number" min="1" class="rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
-                            <select wire:model.live="type" class="rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
-                                <option value="multiple_choice">Pilihan ganda</option>
-                                <option value="essay">Esai</option>
-                            </select>
-                            <input wire:model="score_weight" type="number" min="1" class="rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
+                            <div>
+                                <label class="text-sm font-medium text-zinc-800">Nomor urut</label>
+                                <input wire:model="order_number" type="number" min="1" class="mt-2 rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-zinc-800">Jenis soal</label>
+                                <select wire:model.live="type" class="mt-2 rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
+                                    <option value="multiple_choice">Pilihan ganda</option>
+                                    <option value="multiple_choice_complex">Pilihan ganda kompleks</option>
+                                    <option value="true_false">Benar / salah</option>
+                                    <option value="essay">Esai</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-zinc-800">Bobot nilai</label>
+                                <input wire:model="score_weight" type="number" min="1" class="mt-2 rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
+                            </div>
                         </div>
                         <select wire:model="stimulus_id" class="rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
                             <option value="">Tanpa stimulus</option>
@@ -260,27 +327,48 @@ new class extends Component
                             <p class="text-xs text-zinc-500">Upload gambar baru hanya jika ingin mengganti gambar soal saat ini.</p>
                         @endif
 
-                        @if ($type === 'multiple_choice')
+                        @if (in_array($type, ['multiple_choice', 'multiple_choice_complex', 'true_false'], true))
                             <div class="space-y-3">
-                                @foreach (['A','B','C','D','E'] as $label)
+                                @if ($type === 'multiple_choice_complex')
+                                    <div class="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-sky-900">
+                                        Untuk pilihan ganda kompleks, centang semua opsi yang benar. Siswa juga akan melihat checkbox dan harus memilih kombinasi yang tepat.
+                                    </div>
+                                @elseif ($type === 'true_false')
+                                    <div class="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-sky-900">
+                                        Untuk benar / salah, tulis pertanyaan sebagai satu pernyataan. Opsi jawaban akan otomatis menjadi Benar dan Salah.
+                                    </div>
+                                @endif
+                                @foreach ($this->optionLabels() as $label)
                                     <div class="grid gap-2 rounded-md border border-zinc-200 p-3">
                                         <div class="flex items-center gap-2">
-                                            <input wire:model="answer_key" value="{{ $label }}" type="radio" class="text-emerald-700">
-                                            <span class="w-6 text-sm font-semibold text-zinc-800">{{ $label }}</span>
-                                            <input wire:model="optionTexts.{{ $label }}" placeholder="Teks opsi {{ $label }}" class="flex-1 rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
+                                            @if ($type === 'multiple_choice_complex')
+                                                <input wire:model="correctOptions" value="{{ $label }}" type="checkbox" class="text-emerald-700">
+                                            @else
+                                                <input wire:model="answer_key" value="{{ $label }}" type="radio" class="text-emerald-700">
+                                            @endif
+                                            <span class="w-14 text-sm font-semibold text-zinc-800">{{ $label }}</span>
+                                            @if ($type === 'true_false')
+                                                <div class="flex-1 rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-800">{{ $label }}</div>
+                                            @else
+                                                <input wire:model="optionTexts.{{ $label }}" placeholder="Teks opsi {{ $label }}" class="flex-1 rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
+                                            @endif
                                         </div>
-                                        @if ($existingOptionImages[$label] ?? null)
+                                        @if ($type !== 'true_false' && ($existingOptionImages[$label] ?? null))
                                             <div class="rounded-md border border-zinc-200 bg-zinc-50 p-3">
                                                 <p class="text-xs font-medium text-zinc-500">Preview gambar opsi {{ $label }} saat ini</p>
                                                 <img src="{{ Storage::url($existingOptionImages[$label]) }}" class="mt-2 max-h-28 rounded-md border border-zinc-200 bg-white object-contain">
                                             </div>
                                         @endif
-                                        <input wire:model="optionImages.{{ $label }}" type="file" accept="image/*" class="rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
-                                        @if ($existingOptionImages[$label] ?? null)
+                                        @if ($type !== 'true_false')
+                                            <input wire:model="optionImages.{{ $label }}" type="file" accept="image/*" class="rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm">
+                                        @endif
+                                        @if ($type !== 'true_false' && ($existingOptionImages[$label] ?? null))
                                             <p class="text-xs text-zinc-500">Upload gambar baru hanya jika ingin mengganti gambar opsi {{ $label }}.</p>
                                         @endif
                                     </div>
                                 @endforeach
+                                @error('answer_key') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+                                @error('correctOptions') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
                         @endif
 
@@ -302,7 +390,8 @@ new class extends Component
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <span class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">No. {{ $question->order_number }}</span>
-                                        <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800">{{ $question->type === 'essay' ? 'Esai' : 'Pilihan ganda' }}</span>
+                                        <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800">{{ $question->typeLabel() }}</span>
+                                        <span class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">Bobot {{ $question->score_weight }}</span>
                                         @if ($question->stimulus)
                                             <span class="rounded-md bg-sky-50 px-2 py-1 text-xs font-medium text-sky-800">{{ $question->stimulus->title }}</span>
                                         @endif
@@ -326,11 +415,14 @@ new class extends Component
                                             @endif
                                         </div>
                                     @endif
-                                    @if ($question->isMultipleChoice())
+                                    @if ($question->usesSingleOptionAnswer() || $question->usesMultipleOptionAnswer())
                                         <div class="mt-3 grid gap-2 sm:grid-cols-2">
                                             @foreach ($question->options as $option)
                                                 <div class="rounded-md border border-zinc-200 p-3 text-sm {{ $option->is_correct ? 'bg-emerald-50 text-emerald-900' : 'text-zinc-600' }}">
-                                                    <span class="font-semibold">{{ $option->label }}.</span> {{ $option->option_text }}
+                                                    <span class="font-semibold">{{ $question->isTrueFalse() ? $option->option_text : $option->label.'.' }}</span>
+                                                    @if (! $question->isTrueFalse())
+                                                        {{ ' '.$option->option_text }}
+                                                    @endif
                                                     @if ($option->image_path)
                                                         <img src="{{ Storage::url($option->image_path) }}" class="mt-2 max-h-28 rounded-md border border-zinc-200 object-contain">
                                                     @endif
