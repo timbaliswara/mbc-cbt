@@ -265,6 +265,49 @@ CSV;
         ]);
     }
 
+    public function test_exam_room_batches_answer_writes_until_autosave_or_navigation(): void
+    {
+        $this->seed();
+
+        $exam = Exam::with('questions.options')->where('status', 'active')->firstOrFail();
+        $student = Student::create(['name' => 'Batched Saver']);
+        $token = ExamToken::create([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id,
+            'token' => 'BATCHED1',
+            'status' => 'in_progress',
+        ]);
+        $attempt = ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'student_id' => $student->id,
+            'exam_token_id' => $token->id,
+            'started_at' => now(),
+            'status' => 'in_progress',
+        ]);
+
+        $question = $exam->questions->firstWhere('type', 'multiple_choice');
+        $option = $question->options->firstWhere('label', 'B');
+
+        Livewire::test('student.exam-room', ['attempt' => $attempt])
+            ->set('answers.'.$question->id, $option->id)
+            ->assertSet('dirtyQuestionIds.'.$question->id, true);
+
+        $this->assertDatabaseMissing('student_answers', [
+            'exam_attempt_id' => $attempt->id,
+            'question_id' => $question->id,
+        ]);
+
+        Livewire::test('student.exam-room', ['attempt' => $attempt->fresh()])
+            ->set('answers.'.$question->id, $option->id)
+            ->call('autosaveDirtyAnswers');
+
+        $this->assertDatabaseHas('student_answers', [
+            'exam_attempt_id' => $attempt->id,
+            'question_id' => $question->id,
+            'question_option_id' => $option->id,
+        ]);
+    }
+
     public function test_exam_room_blocks_manual_submit_when_answers_are_blank(): void
     {
         $this->seed();

@@ -15,6 +15,8 @@ new class extends Component
     public int $progressPercent = 0;
     public array $answers = [];
     public array $flags = [];
+    public array $dirtyQuestionIds = [];
+    public array $savedAnswerSignatures = [];
     public array $incompleteQuestionNumbers = [];
     public ?string $submitWarning = null;
     public ?string $focusWarning = null;
@@ -45,13 +47,14 @@ new class extends Component
         }
 
         $this->refreshRemainingTime();
-        $this->refreshProgress();
+        $this->syncSavedAnswerSignatures();
+        $this->recalculateProgress();
     }
 
     public function updatedAnswers($value, ?string $name = null): void
     {
         if (! is_string($name) || $name === '') {
-            $this->refreshProgress();
+            $this->recalculateProgress();
             $this->submitWarning = null;
 
             return;
@@ -64,15 +67,20 @@ new class extends Component
             return;
         }
 
-        $this->saveAnswer($questionId);
+        $this->markQuestionDirty($questionId);
         $this->submitWarning = null;
-        $this->refreshProgress();
+        $this->recalculateProgress();
     }
 
     public function toggleFlag(int $questionId): void
     {
         $this->flags[$questionId] = ! ($this->flags[$questionId] ?? false);
-        $this->saveAnswer($questionId);
+        $this->markQuestionDirty($questionId);
+    }
+
+    public function autosaveDirtyAnswers(): void
+    {
+        $this->flushDirtyAnswers();
     }
 
     public function goTo(int $index): void
@@ -99,6 +107,7 @@ new class extends Component
             return;
         }
 
+        $this->flushDirtyAnswers();
         $this->attempt->increment('focus_violation_count');
         $count = $this->attempt->refresh()->focus_violation_count;
 
@@ -120,55 +129,13 @@ new class extends Component
             return;
         }
 
-        $value = $this->answers[$questionId] ?? null;
-        $payload = [
-            'question_option_id' => null,
-            'answer_text' => null,
-            'answer_payload' => null,
-            'is_flagged' => $this->flags[$questionId] ?? false,
-        ];
-
-        if ($question->usesSingleOptionAnswer()) {
-            $payload['question_option_id'] = filled($value) ? (int) $value : null;
-        } elseif ($question->usesStatementTruthAnswer()) {
-            $labels = $question->statementTruthLabels();
-            $selections = collect((array) $value)
-                ->filter(fn ($item, $key) => filled($item) && is_numeric((string) $key))
-                ->map(fn ($item) => in_array($item, [$labels['positive'], $labels['negative']], true) ? $item : null)
-                ->filter()
-                ->all();
-
-            $payload['answer_payload'] = $selections !== [] ? $selections : null;
-        } elseif ($question->usesMultipleOptionAnswer()) {
-            $selectedIds = collect((array) $value)
-                ->filter(fn ($item, $key) => filter_var($item, FILTER_VALIDATE_BOOLEAN) || $item === true || $item === 1 || $item === '1')
-                ->keys()
-                ->map(fn ($item) => (int) $item)
-                ->values()
-                ->all();
-
-            $payload['answer_payload'] = $selectedIds !== [] ? $selectedIds : null;
-        } else {
-            $payload['answer_text'] = filled($value) ? trim((string) $value) : null;
-        }
-
-        StudentAnswer::updateOrCreate(
-            ['exam_attempt_id' => $this->attempt->id, 'question_id' => $questionId],
-            $payload,
-        );
-
-        $this->attempt->load('answers');
+        $this->persistAnswerPayloads([$question->id => $this->payloadForQuestion($question)]);
     }
 
     public function finish(bool $force = false)
     {
         $this->refreshRemainingTime();
-
-        foreach ($this->questions() as $question) {
-            $this->saveAnswer($question->id);
-        }
-
-        $this->attempt->load('answers.question.options', 'exam.questions.options');
+        $this->flushDirtyAnswers();
         $this->incompleteQuestionNumbers = $this->blankQuestionNumbers();
 
         if (! $force && $this->incompleteQuestionNumbers !== []) {
@@ -180,6 +147,7 @@ new class extends Component
         }
 
         $this->submitWarning = null;
+        $this->attempt->load('answers.question.options', 'exam.questions.options', 'token');
         $summary = ExamScoring::evaluateAttempt($this->attempt);
 
         $this->attempt->update(['finished_at' => now(), 'status' => 'finished']);
@@ -228,10 +196,22 @@ new class extends Component
         $this->remainingSeconds = (int) max(0, floor(now()->diffInSeconds($deadline, false)));
     }
 
-    private function refreshProgress(): void
+    private function recalculateProgress(): void
     {
-        $this->attempt->load('answers', 'exam.questions');
-        $this->progressPercent = ExamScoring::progressPercentage($this->attempt);
+        $questions = $this->questions();
+        $total = $questions->count();
+
+        if ($total === 0) {
+            $this->progressPercent = 0;
+
+            return;
+        }
+
+        $answered = $questions
+            ->filter(fn (Question $question) => ExamScoring::answerIsFilled($question, $this->localAnswerModel($question)))
+            ->count();
+
+        $this->progressPercent = (int) round(($answered / $total) * 100);
     }
 
     private function saveCurrentAnswer(): void
@@ -239,19 +219,162 @@ new class extends Component
         $question = $this->questions()->get($this->currentIndex);
 
         if ($question) {
-            $this->saveAnswer($question->id);
+            $this->flushDirtyAnswers([$question->id]);
         }
     }
 
     private function blankQuestionNumbers(): array
     {
-        $answers = $this->attempt->answers->keyBy('question_id');
-
         return $this->questions()
-            ->filter(fn (Question $question) => ! ExamScoring::answerIsFilled($question, $answers->get($question->id)))
+            ->filter(fn (Question $question) => ! ExamScoring::answerIsFilled($question, $this->localAnswerModel($question)))
             ->map(fn ($question, $index) => $index + 1)
             ->values()
             ->all();
+    }
+
+    private function payloadForQuestion(Question $question): array
+    {
+        $questionId = $question->id;
+        $value = $this->answers[$questionId] ?? null;
+        $payload = [
+            'question_option_id' => null,
+            'answer_text' => null,
+            'answer_payload' => null,
+            'is_flagged' => $this->flags[$questionId] ?? false,
+        ];
+
+        if ($question->usesSingleOptionAnswer()) {
+            $payload['question_option_id'] = filled($value) ? (int) $value : null;
+
+            return $payload;
+        }
+
+        if ($question->usesStatementTruthAnswer()) {
+            $labels = $question->statementTruthLabels();
+            $selections = collect((array) $value)
+                ->filter(fn ($item, $key) => filled($item) && is_numeric((string) $key))
+                ->map(fn ($item) => in_array($item, [$labels['positive'], $labels['negative']], true) ? $item : null)
+                ->filter()
+                ->all();
+
+            $payload['answer_payload'] = $selections !== [] ? $selections : null;
+
+            return $payload;
+        }
+
+        if ($question->usesMultipleOptionAnswer()) {
+            $selectedIds = collect((array) $value)
+                ->filter(fn ($item) => filter_var($item, FILTER_VALIDATE_BOOLEAN) || $item === true || $item === 1 || $item === '1')
+                ->keys()
+                ->map(fn ($item) => (int) $item)
+                ->values()
+                ->all();
+
+            $payload['answer_payload'] = $selectedIds !== [] ? $selectedIds : null;
+
+            return $payload;
+        }
+
+        $payload['answer_text'] = filled($value) ? trim((string) $value) : null;
+
+        return $payload;
+    }
+
+    private function flushDirtyAnswers(array $questionIds = []): void
+    {
+        $dirtyIds = $questionIds === []
+            ? array_map('intval', array_keys(array_filter($this->dirtyQuestionIds)))
+            : array_values(array_unique(array_map('intval', $questionIds)));
+
+        if ($dirtyIds === []) {
+            return;
+        }
+
+        $payloads = [];
+
+        foreach ($dirtyIds as $questionId) {
+            $question = $this->questions()->firstWhere('id', $questionId);
+
+            if (! $question) {
+                continue;
+            }
+
+            $payloads[$questionId] = $this->payloadForQuestion($question);
+        }
+
+        if ($payloads === []) {
+            return;
+        }
+
+        $this->persistAnswerPayloads($payloads);
+        $this->dispatch('answers-flushed');
+    }
+
+    private function persistAnswerPayloads(array $payloads): void
+    {
+        foreach ($payloads as $questionId => $payload) {
+            StudentAnswer::query()->updateOrCreate(
+                [
+                    'exam_attempt_id' => $this->attempt->id,
+                    'question_id' => (int) $questionId,
+                ],
+                [
+                    'question_option_id' => $payload['question_option_id'],
+                    'answer_text' => $payload['answer_text'],
+                    'answer_payload' => $payload['answer_payload'],
+                    'is_flagged' => $payload['is_flagged'],
+                ],
+            );
+
+            $this->savedAnswerSignatures[(int) $questionId] = $this->signatureForPayload($payload);
+            unset($this->dirtyQuestionIds[(int) $questionId]);
+        }
+    }
+
+    private function syncSavedAnswerSignatures(): void
+    {
+        foreach ($this->questions() as $question) {
+            $this->savedAnswerSignatures[$question->id] = $this->signatureForPayload($this->payloadForQuestion($question));
+        }
+
+        $this->dirtyQuestionIds = [];
+    }
+
+    private function markQuestionDirty(int $questionId): void
+    {
+        $question = $this->questions()->firstWhere('id', $questionId);
+
+        if (! $question) {
+            return;
+        }
+
+        $currentSignature = $this->signatureForPayload($this->payloadForQuestion($question));
+        $savedSignature = $this->savedAnswerSignatures[$questionId] ?? null;
+
+        if ($currentSignature === $savedSignature) {
+            unset($this->dirtyQuestionIds[$questionId]);
+
+            return;
+        }
+
+        $this->dirtyQuestionIds[$questionId] = true;
+    }
+
+    private function signatureForPayload(array $payload): string
+    {
+        return json_encode([
+            'question_option_id' => $payload['question_option_id'],
+            'answer_text' => $payload['answer_text'],
+            'answer_payload' => $payload['answer_payload'],
+            'is_flagged' => (bool) $payload['is_flagged'],
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    private function localAnswerModel(Question $question): StudentAnswer
+    {
+        $payload = $this->payloadForQuestion($question);
+
+        return new StudentAnswer($payload);
     }
 };
 ?>
@@ -274,6 +397,7 @@ new class extends Component
     x-data="{
         remaining: {{ $remainingSeconds }},
         submitted: false,
+        pendingChanges: false,
         focusViolations: {{ (int) $attempt->focus_violation_count }},
         focusLimit: {{ $focusLimit }},
         timerLabel() {
@@ -296,6 +420,24 @@ new class extends Component
                 }
             }, 1000);
         },
+        startAutosave() {
+            const interval = setInterval(() => {
+                if (this.submitted || ! this.pendingChanges) {
+                    return;
+                }
+
+                this.$wire.autosaveDirtyAnswers().then(() => {
+                    this.pendingChanges = false;
+                });
+            }, 8000);
+
+            window.addEventListener('beforeunload', () => {
+                if (! this.submitted && this.pendingChanges) {
+                    this.$wire.autosaveDirtyAnswers();
+                }
+                clearInterval(interval);
+            });
+        },
         watchFocus() {
             document.addEventListener('visibilitychange', () => {
                 if (! document.hidden || this.submitted) {
@@ -303,6 +445,7 @@ new class extends Component
                 }
 
                 this.focusViolations += 1;
+                this.pendingChanges = false;
                 this.$wire.registerFocusViolation();
 
                 if (this.focusViolations >= this.focusLimit) {
@@ -311,7 +454,9 @@ new class extends Component
             });
         },
     }"
-    x-init="startTimer(); watchFocus()"
+    x-on:change.capture="pendingChanges = true"
+    x-on:answers-flushed.window="pendingChanges = false"
+    x-init="startTimer(); startAutosave(); watchFocus()"
     class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8"
 >
     @if ($question)
@@ -356,7 +501,7 @@ new class extends Component
                         <span class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">{{ $question->typeLabel() }}</span>
                         <span class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">Bobot {{ $question->score_weight }}</span>
                     </div>
-                    <button wire:click="toggleFlag({{ $question->id }})" class="rounded-md border border-zinc-200 px-3 py-2 text-sm font-medium {{ ($flags[$question->id] ?? false) ? 'bg-amber-50 text-amber-800 border-amber-300' : 'text-zinc-700' }}">Ragu-ragu</button>
+                    <button x-on:click="pendingChanges = true" wire:click="toggleFlag({{ $question->id }})" class="rounded-md border border-zinc-200 px-3 py-2 text-sm font-medium {{ ($flags[$question->id] ?? false) ? 'bg-amber-50 text-amber-800 border-amber-300' : 'text-zinc-700' }}">Ragu-ragu</button>
                 </div>
 
                 <p class="mt-4 whitespace-pre-line text-base leading-7 text-zinc-950">{{ $question->question_text }}</p>
@@ -453,10 +598,10 @@ new class extends Component
                 @endif
 
                 <div class="mt-6 flex flex-wrap justify-between gap-3">
-                    <button wire:click="previous" class="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">Sebelumnya</button>
+                    <button x-on:click="pendingChanges = false" wire:click="previous" class="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">Sebelumnya</button>
                     <div class="flex gap-3">
                         @if ($currentIndex < $questions->count() - 1)
-                            <button wire:click="next" class="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">Berikutnya</button>
+                            <button x-on:click="pendingChanges = false" wire:click="next" class="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">Berikutnya</button>
                         @else
                             <span class="rounded-md bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">Ini soal terakhir</span>
                         @endif
@@ -480,7 +625,7 @@ new class extends Component
                                         ? 'bg-amber-100 text-amber-900 ring-1 ring-amber-300'
                                         : ($isAnswered ? 'bg-emerald-50 text-emerald-800' : 'bg-zinc-100 text-zinc-600'));
                             @endphp
-                            <button wire:click="goTo({{ $index }})" class="aspect-square rounded-md text-sm font-semibold {{ $classes }}">{{ $index + 1 }}</button>
+                            <button x-on:click="pendingChanges = false" wire:click="goTo({{ $index }})" class="aspect-square rounded-md text-sm font-semibold {{ $classes }}">{{ $index + 1 }}</button>
                         @endforeach
                     </div>
 
@@ -526,7 +671,7 @@ new class extends Component
                 <div class="rounded-md border border-emerald-200 bg-emerald-50 p-4">
                     <p class="text-sm font-semibold text-emerald-950">Selesai mengerjakan?</p>
                     <p class="mt-2 text-sm leading-6 text-emerald-900">Tombol ini hanya dipakai kalau semua soal sudah terisi. Kalau masih ada yang kosong, sistem akan mengarahkanmu ke soal pertama yang belum dijawab.</p>
-                    <button wire:click="finish" wire:confirm="Kumpulkan ujian sekarang? Pastikan semua jawaban sudah terisi." class="premium-button mt-4 w-full rounded-md px-4 py-3 text-sm font-semibold text-white hover:brightness-105">Kumpulkan ujian</button>
+                    <button x-on:click="pendingChanges = false" wire:click="finish" wire:confirm="Kumpulkan ujian sekarang? Pastikan semua jawaban sudah terisi." class="premium-button mt-4 w-full rounded-md px-4 py-3 text-sm font-semibold text-white hover:brightness-105">Kumpulkan ujian</button>
                 </div>
             </aside>
         </div>
