@@ -83,6 +83,13 @@ new class extends Component
         $this->flushDirtyAnswers();
     }
 
+    public function beginExam(): array
+    {
+        $this->refreshRemainingTime();
+
+        return ['remainingSeconds' => $this->remainingSeconds];
+    }
+
     public function goTo(int $index): void
     {
         $this->saveCurrentAnswer();
@@ -397,9 +404,13 @@ new class extends Component
     x-data="{
         remaining: {{ $remainingSeconds }},
         submitted: false,
+        examStarted: false,
+        introOpen: true,
         pendingChanges: false,
         focusViolations: {{ (int) $attempt->focus_violation_count }},
         focusLimit: {{ $focusLimit }},
+        timerHandle: null,
+        focusWatchBound: false,
         timerLabel() {
             const hours = Math.floor(this.remaining / 3600).toString().padStart(2, '0');
             const minutes = Math.floor((this.remaining % 3600) / 60).toString().padStart(2, '0');
@@ -407,18 +418,35 @@ new class extends Component
             return `${hours}:${minutes}:${seconds}`;
         },
         startTimer() {
-            const interval = setInterval(() => {
+            if (this.timerHandle) {
+                return;
+            }
+
+            this.timerHandle = setInterval(() => {
                 if (this.remaining > 0) {
                     this.remaining -= 1;
                     return;
                 }
 
-                clearInterval(interval);
+                clearInterval(this.timerHandle);
+                this.timerHandle = null;
                 if (! this.submitted) {
                     this.submitted = true;
                     this.$wire.finish(true);
                 }
             }, 1000);
+        },
+        startExam() {
+            this.$wire.beginExam().then((payload) => {
+                if (payload && typeof payload.remainingSeconds === 'number') {
+                    this.remaining = payload.remainingSeconds;
+                }
+
+                this.examStarted = true;
+                this.introOpen = false;
+                this.startTimer();
+                this.watchFocus();
+            });
         },
         startAutosave() {
             const interval = setInterval(() => {
@@ -439,8 +467,13 @@ new class extends Component
             });
         },
         watchFocus() {
+            if (this.focusWatchBound) {
+                return;
+            }
+
+            this.focusWatchBound = true;
             document.addEventListener('visibilitychange', () => {
-                if (! document.hidden || this.submitted) {
+                if (! this.examStarted || ! document.hidden || this.submitted) {
                     return;
                 }
 
@@ -456,229 +489,270 @@ new class extends Component
     }"
     x-on:change.capture="pendingChanges = true"
     x-on:answers-flushed.window="pendingChanges = false"
-    x-init="startTimer(); startAutosave(); watchFocus()"
+    x-init="startAutosave()"
     class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8"
 >
     @if ($question)
-        <div class="surface mb-5 rounded-md p-5">
-            <div class="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <p class="text-sm font-medium text-emerald-700">{{ $attempt->exam->title }}</p>
-                    <h1 class="mt-1 text-2xl font-semibold tracking-tight text-zinc-950">{{ $attempt->student->name }}</h1>
-                    <p class="mt-2 text-sm text-zinc-500">{{ $progressPercent }}% progres pengerjaan · {{ $answered }} dari {{ $questions->count() }} soal sudah terisi</p>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800" x-text="timerLabel()">{{ gmdate('H:i:s', $remainingSeconds) }}</div>
-                    <div class="rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white">{{ $progressPercent }}%</div>
+        <div class="relative">
+            <div
+                x-show="introOpen"
+                x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/55 px-4 py-8 backdrop-blur-sm"
+            >
+                <div class="w-full max-w-2xl rounded-md border border-emerald-200 bg-white p-6 shadow-2xl shadow-zinc-950/20 sm:p-7">
+                    <div class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800">Perhatian sebelum mulai</div>
+                    <h2 class="mt-4 text-2xl font-semibold tracking-tight text-zinc-950">Pastikan peserta siap, lalu mulai mengerjakan.</h2>
+                    <p class="mt-3 text-sm leading-6 text-zinc-600">Timer akan mulai berjalan setelah tombol di bawah ditekan. Setelah itu, TIM MBC menyarankan peserta tetap fokus di halaman ujian sampai selesai.</p>
+
+                    <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                        <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                            <p class="font-semibold text-amber-950">Peringatan fokus</p>
+                            <p class="mt-1">Jika peserta berpindah tab, jendela, atau aplikasi satu kali, sistem memberi peringatan. Jika terjadi lagi, ujian langsung dikumpulkan otomatis.</p>
+                        </div>
+                        <div class="rounded-md border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-900">
+                            <p class="font-semibold text-sky-950">Penyimpanan jawaban</p>
+                            <p class="mt-1">Jawaban disimpan saat pindah soal, klik nomor soal, autosimpan berjalan, atau saat ujian dikumpulkan.</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900">
+                        <p class="font-semibold text-emerald-950">Yang perlu dicek sebelum mulai</p>
+                        <ul class="mt-2 space-y-1">
+                            <li>Koneksi internet stabil.</li>
+                            <li>Nama peserta sudah benar.</li>
+                            <li>Peserta siap mengerjakan tanpa membuka tab lain.</li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p class="text-sm text-zinc-500">Saat tombol ini ditekan, hitung mundur langsung dimulai.</p>
+                        <button x-on:click="startExam()" class="premium-button rounded-md px-5 py-3 text-sm font-semibold text-white hover:brightness-105">Mulai mengerjakan</button>
+                    </div>
                 </div>
             </div>
-            <div class="mt-4 h-2 overflow-hidden rounded-full bg-zinc-100">
-                <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all" style="width: {{ $progressPercent }}%"></div>
-            </div>
-        </div>
 
-        <div class="grid gap-6 lg:grid-cols-[1fr_300px]">
-            <section wire:key="question-panel-{{ $question->id }}" class="surface rounded-md p-6">
-                @if ($question->stimulus)
-                    <div class="mb-5 rounded-md border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Bacaan/gambar bersama dari TIM MBC</p>
-                        <h2 class="mt-2 text-base font-semibold text-emerald-950">{{ $question->stimulus->title }}</h2>
-                        @if ($question->stimulus->content)
-                            <p class="mt-3 whitespace-pre-line rounded-md border border-emerald-100 bg-white/80 p-4 text-sm leading-7 text-zinc-800">{{ $question->stimulus->content }}</p>
-                        @endif
-                        @if ($question->stimulus->file_path)
-                            <img src="{{ Storage::url($question->stimulus->file_path) }}" class="mt-3 max-h-96 rounded-md border border-emerald-200 bg-white object-contain" alt="Gambar stimulus">
-                        @endif
-                        @if ($question->stimulus->caption)
-                            <p class="mt-2 text-xs leading-5 text-emerald-800">{{ $question->stimulus->caption }}</p>
-                        @endif
+            <div x-bind:class="introOpen ? 'pointer-events-none select-none blur-[2px]' : ''">
+                <div class="surface mb-5 rounded-md p-5">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-medium text-emerald-700">{{ $attempt->exam->title }}</p>
+                            <h1 class="mt-1 text-2xl font-semibold tracking-tight text-zinc-950">{{ $attempt->student->name }}</h1>
+                            <p class="mt-2 text-sm text-zinc-500">{{ $progressPercent }}% progres pengerjaan · {{ $answered }} dari {{ $questions->count() }} soal sudah terisi</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <div class="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800" x-text="timerLabel()">{{ gmdate('H:i:s', $remainingSeconds) }}</div>
+                            <div class="rounded-md bg-zinc-950 px-4 py-2 text-sm font-semibold text-white">{{ $progressPercent }}%</div>
+                        </div>
                     </div>
-                @endif
-
-                <div class="flex items-center justify-between gap-3">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800">Soal {{ $currentIndex + 1 }}</span>
-                        <span class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">{{ $question->typeLabel() }}</span>
-                        <span class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">Bobot {{ $question->score_weight }}</span>
+                    <div class="mt-4 h-2 overflow-hidden rounded-full bg-zinc-100">
+                        <div class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all" style="width: {{ $progressPercent }}%"></div>
                     </div>
-                    <button x-on:click="pendingChanges = true" wire:click="toggleFlag({{ $question->id }})" class="rounded-md border border-zinc-200 px-3 py-2 text-sm font-medium {{ ($flags[$question->id] ?? false) ? 'bg-amber-50 text-amber-800 border-amber-300' : 'text-zinc-700' }}">Ragu-ragu</button>
                 </div>
 
-                <p class="mt-4 whitespace-pre-line text-base leading-7 text-zinc-950">{{ $question->question_text }}</p>
-                @if ($question->image_path)
-                    <img src="{{ Storage::url($question->image_path) }}" class="mt-4 max-h-96 rounded-md border border-zinc-200 object-contain" alt="Gambar soal">
-                @endif
+                <div class="grid gap-6 lg:grid-cols-[1fr_300px]">
+                    <section wire:key="question-panel-{{ $question->id }}" class="surface rounded-md p-6">
+                        @if ($question->stimulus)
+                            <div class="mb-5 rounded-md border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+                                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Bacaan/gambar bersama dari TIM MBC</p>
+                                <h2 class="mt-2 text-base font-semibold text-emerald-950">{{ $question->stimulus->title }}</h2>
+                                @if ($question->stimulus->content)
+                                    <p class="mt-3 whitespace-pre-line rounded-md border border-emerald-100 bg-white/80 p-4 text-sm leading-7 text-zinc-800">{{ $question->stimulus->content }}</p>
+                                @endif
+                                @if ($question->stimulus->file_path)
+                                    <img src="{{ Storage::url($question->stimulus->file_path) }}" class="mt-3 max-h-96 rounded-md border border-emerald-200 bg-white object-contain" alt="Gambar stimulus">
+                                @endif
+                                @if ($question->stimulus->caption)
+                                    <p class="mt-2 text-xs leading-5 text-emerald-800">{{ $question->stimulus->caption }}</p>
+                                @endif
+                            </div>
+                        @endif
 
-                @if ($question->usesSingleOptionAnswer())
-                    <div class="mt-6 grid gap-3">
-                        @foreach ($this->optionsFor($question) as $option)
-                            <label wire:key="question-{{ $question->id }}-option-{{ $option->id }}" class="flex cursor-pointer gap-3 rounded-md border border-zinc-200 bg-white/80 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40">
-                                <input
-                                    wire:model="answers.{{ $question->id }}"
-                                    name="answer_{{ $question->id }}"
-                                    value="{{ $option->id }}"
-                                    type="radio"
-                                    class="mt-1 text-emerald-700"
-                                >
-                                <span class="text-sm text-zinc-700">
-                                    <span class="font-semibold text-zinc-950">{{ $question->isTrueFalse() ? $option->option_text : $option->label.'.' }}</span>
-                                    @if ($option->option_text && ! $question->isTrueFalse())
-                                        {{ ' '.$option->option_text }}
-                                    @endif
-                                    @if ($option->image_path)
-                                        <img src="{{ Storage::url($option->image_path) }}" class="mt-2 max-h-40 rounded-md border border-zinc-200 object-contain" alt="Gambar opsi">
-                                    @endif
-                                </span>
-                            </label>
-                        @endforeach
-                    </div>
-                @elseif ($question->usesStatementTruthAnswer())
-                    @php
-                        $labels = $question->statementTruthLabels();
-                    @endphp
-                    <div class="mt-6 overflow-hidden rounded-md border border-zinc-200">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-zinc-50 text-zinc-600">
-                                <tr>
-                                    <th class="px-4 py-3 font-semibold">Pernyataan</th>
-                                    <th class="px-4 py-3 text-center font-semibold">{{ $labels['positive'] }}</th>
-                                    <th class="px-4 py-3 text-center font-semibold">{{ $labels['negative'] }}</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-zinc-100 bg-white">
-                                @foreach ($question->options as $statement)
-                                    <tr wire:key="statement-{{ $question->id }}-{{ $statement->id }}">
-                                        <td class="px-4 py-4 leading-6 text-zinc-800">{{ $statement->option_text }}</td>
-                                        @foreach ([$labels['positive'], $labels['negative']] as $choice)
-                                            <td class="px-4 py-4 text-center">
-                                                <input
-                                                    wire:model="answers.{{ $question->id }}.{{ $statement->id }}"
-                                                    type="radio"
-                                                    value="{{ $choice }}"
-                                                    name="statement_{{ $question->id }}_{{ $statement->id }}"
-                                                    class="text-emerald-700"
-                                                >
-                                            </td>
-                                        @endforeach
-                                    </tr>
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-800">Soal {{ $currentIndex + 1 }}</span>
+                                <span class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">{{ $question->typeLabel() }}</span>
+                                <span class="rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-700">Bobot {{ $question->score_weight }}</span>
+                            </div>
+                            <button x-on:click="pendingChanges = true" wire:click="toggleFlag({{ $question->id }})" class="rounded-md border border-zinc-200 px-3 py-2 text-sm font-medium {{ ($flags[$question->id] ?? false) ? 'bg-amber-50 text-amber-800 border-amber-300' : 'text-zinc-700' }}">Ragu-ragu</button>
+                        </div>
+
+                        <p class="mt-4 whitespace-pre-line text-base leading-7 text-zinc-950">{{ $question->question_text }}</p>
+                        @if ($question->image_path)
+                            <img src="{{ Storage::url($question->image_path) }}" class="mt-4 max-h-96 rounded-md border border-zinc-200 object-contain" alt="Gambar soal">
+                        @endif
+
+                        @if ($question->usesSingleOptionAnswer())
+                            <div class="mt-6 grid gap-3">
+                                @foreach ($this->optionsFor($question) as $option)
+                                    <label wire:key="question-{{ $question->id }}-option-{{ $option->id }}" class="flex cursor-pointer gap-3 rounded-md border border-zinc-200 bg-white/80 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40">
+                                        <input
+                                            wire:model="answers.{{ $question->id }}"
+                                            name="answer_{{ $question->id }}"
+                                            value="{{ $option->id }}"
+                                            type="radio"
+                                            class="mt-1 text-emerald-700"
+                                        >
+                                        <span class="text-sm text-zinc-700">
+                                            <span class="font-semibold text-zinc-950">{{ $question->isTrueFalse() ? $option->option_text : $option->label.'.' }}</span>
+                                            @if ($option->option_text && ! $question->isTrueFalse())
+                                                {{ ' '.$option->option_text }}
+                                            @endif
+                                            @if ($option->image_path)
+                                                <img src="{{ Storage::url($option->image_path) }}" class="mt-2 max-h-40 rounded-md border border-zinc-200 object-contain" alt="Gambar opsi">
+                                            @endif
+                                        </span>
+                                    </label>
                                 @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @elseif ($question->usesMultipleOptionAnswer())
-                    <div class="mt-6 rounded-md border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-900">
-                        Pilih semua opsi yang menurutmu benar. Nilai penuh diberikan jika kombinasi jawabanmu tepat.
-                    </div>
-                    <div class="mt-4 grid gap-3">
-                        @foreach ($this->optionsFor($question) as $option)
-                            <label wire:key="question-{{ $question->id }}-option-{{ $option->id }}" class="flex cursor-pointer gap-3 rounded-md border border-zinc-200 bg-white/80 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40">
-                                <input
-                                    wire:model="answers.{{ $question->id }}.{{ $option->id }}"
-                                    type="checkbox"
-                                    value="1"
-                                    name="answer_{{ $question->id }}_{{ $option->id }}"
-                                    class="mt-1 rounded border-zinc-300 text-emerald-700"
-                                >
-                                <span class="text-sm text-zinc-700">
-                                    <span class="font-semibold text-zinc-950">{{ $option->label }}.</span> {{ $option->option_text }}
-                                    @if ($option->image_path)
-                                        <img src="{{ Storage::url($option->image_path) }}" class="mt-2 max-h-40 rounded-md border border-zinc-200 object-contain" alt="Gambar opsi">
-                                    @endif
-                                </span>
-                            </label>
-                        @endforeach
-                    </div>
-                @else
-                    <textarea
-                        wire:model.blur="answers.{{ $question->id }}"
-                        rows="8"
-                        class="mt-6 w-full rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm"
-                        placeholder="Tulis jawaban esai di sini"
-                    ></textarea>
-                @endif
-
-                <div class="mt-6 flex flex-wrap justify-between gap-3">
-                    <button x-on:click="pendingChanges = false" wire:click="previous" class="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">Sebelumnya</button>
-                    <div class="flex gap-3">
-                        @if ($currentIndex < $questions->count() - 1)
-                            <button x-on:click="pendingChanges = false" wire:click="next" class="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">Berikutnya</button>
-                        @else
-                            <span class="rounded-md bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">Ini soal terakhir</span>
-                        @endif
-                    </div>
-                </div>
-            </section>
-
-            <aside class="space-y-5">
-                <div class="surface rounded-md p-5">
-                    <h2 class="text-sm font-semibold text-zinc-950">Navigasi soal</h2>
-                    <div class="mt-4 grid grid-cols-5 gap-2">
-                        @foreach ($questions as $index => $item)
+                            </div>
+                        @elseif ($question->usesStatementTruthAnswer())
                             @php
-                                $isCurrent = $index === $currentIndex;
-                                $isFlagged = $flags[$item->id] ?? false;
-                                $value = $answers[$item->id] ?? null;
-                                $isAnswered = is_array($value) ? count(array_filter($value)) > 0 : filled($value);
-                                $classes = $isCurrent
-                                    ? 'bg-emerald-700 text-white'
-                                    : ($isFlagged
-                                        ? 'bg-amber-100 text-amber-900 ring-1 ring-amber-300'
-                                        : ($isAnswered ? 'bg-emerald-50 text-emerald-800' : 'bg-zinc-100 text-zinc-600'));
+                                $labels = $question->statementTruthLabels();
                             @endphp
-                            <button x-on:click="pendingChanges = false" wire:click="goTo({{ $index }})" class="aspect-square rounded-md text-sm font-semibold {{ $classes }}">{{ $index + 1 }}</button>
-                        @endforeach
-                    </div>
+                            <div class="mt-6 overflow-hidden rounded-md border border-zinc-200">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-zinc-50 text-zinc-600">
+                                        <tr>
+                                            <th class="px-4 py-3 font-semibold">Pernyataan</th>
+                                            <th class="px-4 py-3 text-center font-semibold">{{ $labels['positive'] }}</th>
+                                            <th class="px-4 py-3 text-center font-semibold">{{ $labels['negative'] }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-zinc-100 bg-white">
+                                        @foreach ($question->options as $statement)
+                                            <tr wire:key="statement-{{ $question->id }}-{{ $statement->id }}">
+                                                <td class="px-4 py-4 leading-6 text-zinc-800">{{ $statement->option_text }}</td>
+                                                @foreach ([$labels['positive'], $labels['negative']] as $choice)
+                                                    <td class="px-4 py-4 text-center">
+                                                        <input
+                                                            wire:model="answers.{{ $question->id }}.{{ $statement->id }}"
+                                                            type="radio"
+                                                            value="{{ $choice }}"
+                                                            name="statement_{{ $question->id }}_{{ $statement->id }}"
+                                                            class="text-emerald-700"
+                                                        >
+                                                    </td>
+                                                @endforeach
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @elseif ($question->usesMultipleOptionAnswer())
+                            <div class="mt-6 rounded-md border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-900">
+                                Pilih semua opsi yang menurutmu benar. Nilai penuh diberikan jika kombinasi jawabanmu tepat.
+                            </div>
+                            <div class="mt-4 grid gap-3">
+                                @foreach ($this->optionsFor($question) as $option)
+                                    <label wire:key="question-{{ $question->id }}-option-{{ $option->id }}" class="flex cursor-pointer gap-3 rounded-md border border-zinc-200 bg-white/80 p-4 transition hover:border-emerald-200 hover:bg-emerald-50/40">
+                                        <input
+                                            wire:model="answers.{{ $question->id }}.{{ $option->id }}"
+                                            type="checkbox"
+                                            value="1"
+                                            name="answer_{{ $question->id }}_{{ $option->id }}"
+                                            class="mt-1 rounded border-zinc-300 text-emerald-700"
+                                        >
+                                        <span class="text-sm text-zinc-700">
+                                            <span class="font-semibold text-zinc-950">{{ $option->label }}.</span> {{ $option->option_text }}
+                                            @if ($option->image_path)
+                                                <img src="{{ Storage::url($option->image_path) }}" class="mt-2 max-h-40 rounded-md border border-zinc-200 object-contain" alt="Gambar opsi">
+                                            @endif
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        @else
+                            <textarea
+                                wire:model.blur="answers.{{ $question->id }}"
+                                rows="8"
+                                class="mt-6 w-full rounded-md border border-zinc-200 px-3 py-2 text-sm shadow-sm"
+                                placeholder="Tulis jawaban esai di sini"
+                            ></textarea>
+                        @endif
 
-                    <div class="mt-5 grid gap-2 text-xs text-zinc-600">
-                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-sm bg-emerald-700"></span> Soal yang sedang dibuka</div>
-                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-sm bg-emerald-100"></span> Soal sudah dijawab</div>
-                        <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-sm bg-amber-100"></span> Soal ditandai ragu-ragu</div>
-                    </div>
-                </div>
-
-                <div class="surface rounded-md p-5">
-                    <p class="text-sm font-semibold text-zinc-950">Pantauan sesi</p>
-                    <div class="mt-4 space-y-3 text-sm text-zinc-600">
-                        <div class="flex items-center justify-between gap-3">
-                            <span>Progres</span>
-                            <span class="font-semibold text-zinc-950">{{ $progressPercent }}%</span>
+                        <div class="mt-6 flex flex-wrap justify-between gap-3">
+                            <button x-on:click="pendingChanges = false" wire:click="previous" class="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">Sebelumnya</button>
+                            <div class="flex gap-3">
+                                @if ($currentIndex < $questions->count() - 1)
+                                    <button x-on:click="pendingChanges = false" wire:click="next" class="rounded-md border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50">Berikutnya</button>
+                                @else
+                                    <span class="rounded-md bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">Ini soal terakhir</span>
+                                @endif
+                            </div>
                         </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <span>Jawaban terisi</span>
-                            <span class="font-semibold text-zinc-950">{{ $answered }}/{{ $questions->count() }}</span>
+                    </section>
+
+                    <aside class="space-y-5 lg:sticky lg:top-24 lg:self-start">
+                        <div class="surface rounded-md p-5">
+                            <h2 class="text-sm font-semibold text-zinc-950">Navigasi soal</h2>
+                            <div class="mt-4 grid grid-cols-5 gap-2">
+                                @foreach ($questions as $index => $item)
+                                    @php
+                                        $isCurrent = $index === $currentIndex;
+                                        $isFlagged = $flags[$item->id] ?? false;
+                                        $value = $answers[$item->id] ?? null;
+                                        $isAnswered = is_array($value) ? count(array_filter($value)) > 0 : filled($value);
+                                        $classes = $isCurrent
+                                            ? 'bg-emerald-700 text-white'
+                                            : ($isFlagged
+                                                ? 'bg-amber-100 text-amber-900 ring-1 ring-amber-300'
+                                                : ($isAnswered ? 'bg-emerald-50 text-emerald-800' : 'bg-zinc-100 text-zinc-600'));
+                                    @endphp
+                                    <button x-on:click="pendingChanges = false" wire:click="goTo({{ $index }})" class="aspect-square rounded-md text-sm font-semibold {{ $classes }}">{{ $index + 1 }}</button>
+                                @endforeach
+                            </div>
+
+                            <div class="mt-5 grid gap-2 text-xs text-zinc-600">
+                                <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-sm bg-emerald-700"></span> Soal yang sedang dibuka</div>
+                                <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-sm bg-emerald-100"></span> Soal sudah dijawab</div>
+                                <div class="flex items-center gap-2"><span class="h-3 w-3 rounded-sm bg-amber-100"></span> Soal ditandai ragu-ragu</div>
+                            </div>
                         </div>
-                        <div class="flex items-center justify-between gap-3">
-                            <span>Pindah tab/jendela</span>
-                            <span class="font-semibold text-zinc-950">{{ $attempt->focus_violation_count }}/{{ $focusLimit }}</span>
+
+                        <div class="surface rounded-md p-5">
+                            <p class="text-sm font-semibold text-zinc-950">Pantauan sesi</p>
+                            <div class="mt-4 space-y-3 text-sm text-zinc-600">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span>Progres</span>
+                                    <span class="font-semibold text-zinc-950">{{ $progressPercent }}%</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-3">
+                                    <span>Jawaban terisi</span>
+                                    <span class="font-semibold text-zinc-950">{{ $answered }}/{{ $questions->count() }}</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-3">
+                                    <span>Pindah tab/jendela</span>
+                                    <span class="font-semibold text-zinc-950">{{ $attempt->focus_violation_count }}/{{ $focusLimit }}</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+
+                        <div class="rounded-md border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-900">
+                            <p class="font-semibold text-sky-950">Sebelum menutup atau refresh halaman</p>
+                            <p class="mt-1">Jawaban akan disimpan saat kamu pindah soal, klik nomor soal, menunggu autosimpan beberapa detik, atau mengumpulkan ujian. Supaya aman, tunggu sejenak setelah mengubah jawaban terakhir sebelum refresh atau keluar.</p>
+                        </div>
+
+                        @if ($focusWarning)
+                            <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                                <p class="font-semibold text-amber-950">Perhatian</p>
+                                <p class="mt-1">{{ $focusWarning }}</p>
+                            </div>
+                        @endif
+
+                        @if ($submitWarning)
+                            <div class="rounded-md border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800">
+                                <p class="font-semibold text-red-950">Masih ada jawaban kosong</p>
+                                <p class="mt-1">{{ $submitWarning }}</p>
+                            </div>
+                        @endif
+
+                        <div class="rounded-md border border-emerald-200 bg-emerald-50 p-4">
+                            <p class="text-sm font-semibold text-emerald-950">Selesai mengerjakan?</p>
+                            <p class="mt-2 text-sm leading-6 text-emerald-900">Tombol ini hanya dipakai kalau semua soal sudah terisi. Saat diklik, sistem akan menyimpan perubahan terakhir dulu lalu memeriksa apakah masih ada jawaban kosong.</p>
+                            <button x-on:click="pendingChanges = false" wire:click="finish" wire:confirm="Kumpulkan ujian sekarang? Pastikan semua jawaban sudah terisi." class="premium-button mt-4 w-full rounded-md px-4 py-3 text-sm font-semibold text-white hover:brightness-105">Kumpulkan ujian</button>
+                        </div>
+                    </aside>
                 </div>
-
-                <div class="rounded-md border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-900">
-                    <p class="font-semibold text-sky-950">Sebelum menutup atau refresh halaman</p>
-                    <p class="mt-1">Jawaban akan disimpan saat kamu pindah soal, klik nomor soal, menunggu autosimpan beberapa detik, atau mengumpulkan ujian. Supaya aman, tunggu sejenak setelah mengubah jawaban terakhir sebelum refresh atau keluar.</p>
-                </div>
-
-                @if ($focusWarning)
-                    <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-                        <p class="font-semibold text-amber-950">Perhatian</p>
-                        <p class="mt-1">{{ $focusWarning }}</p>
-                    </div>
-                @endif
-
-                @if ($submitWarning)
-                    <div class="rounded-md border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800">
-                        <p class="font-semibold text-red-950">Masih ada jawaban kosong</p>
-                        <p class="mt-1">{{ $submitWarning }}</p>
-                    </div>
-                @endif
-
-                <div class="rounded-md border border-emerald-200 bg-emerald-50 p-4">
-                    <p class="text-sm font-semibold text-emerald-950">Selesai mengerjakan?</p>
-                    <p class="mt-2 text-sm leading-6 text-emerald-900">Tombol ini hanya dipakai kalau semua soal sudah terisi. Saat diklik, sistem akan menyimpan perubahan terakhir dulu lalu memeriksa apakah masih ada jawaban kosong.</p>
-                    <button x-on:click="pendingChanges = false" wire:click="finish" wire:confirm="Kumpulkan ujian sekarang? Pastikan semua jawaban sudah terisi." class="premium-button mt-4 w-full rounded-md px-4 py-3 text-sm font-semibold text-white hover:brightness-105">Kumpulkan ujian</button>
-                </div>
-            </aside>
+            </div>
         </div>
     @else
         <div class="rounded-md border border-zinc-200 bg-white p-10 text-center text-zinc-500">Belum ada soal pada ujian ini.</div>

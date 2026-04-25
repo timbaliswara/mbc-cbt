@@ -405,6 +405,8 @@ CSV;
         ]);
 
         Livewire::test('student.exam-room', ['attempt' => $attempt])
+            ->assertSee('Perhatian sebelum mulai')
+            ->assertSee('Mulai mengerjakan')
             ->assertSee('Bacaan/gambar bersama dari TIM MBC')
             ->assertSee($question->stimulus->title)
             ->assertSee(str($question->stimulus->content)->before("\n")->toString());
