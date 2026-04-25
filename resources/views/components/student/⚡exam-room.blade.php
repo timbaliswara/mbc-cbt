@@ -118,7 +118,7 @@ new class extends Component
             return;
         }
 
-        $this->focusWarning = 'Peringatan 1 dari 1: ruang ujian terdeteksi ditinggalkan. Jika kamu berpindah tab, jendela, atau aplikasi sekali lagi, ujian akan langsung dikumpulkan otomatis.';
+        $this->focusWarning = 'Peringatan 1 dari 1: ruang ujian terdeteksi ditinggalkan. TIM MBC menyarankan tetap di halaman ujian. Jika kamu berpindah tab, jendela, atau aplikasi sekali lagi, ujian akan langsung dikumpulkan otomatis.';
     }
 
     public function saveAnswer(int $questionId): void
@@ -654,6 +654,11 @@ new class extends Component
                     </div>
                 </div>
 
+                <div class="rounded-md border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-900">
+                    <p class="font-semibold text-sky-950">Sebelum menutup atau refresh halaman</p>
+                    <p class="mt-1">Jawaban akan disimpan saat kamu pindah soal, klik nomor soal, menunggu autosimpan beberapa detik, atau mengumpulkan ujian. Supaya aman, tunggu sejenak setelah mengubah jawaban terakhir sebelum refresh atau keluar.</p>
+                </div>
+
                 @if ($focusWarning)
                     <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
                         <p class="font-semibold text-amber-950">Perhatian</p>
@@ -670,7 +675,7 @@ new class extends Component
 
                 <div class="rounded-md border border-emerald-200 bg-emerald-50 p-4">
                     <p class="text-sm font-semibold text-emerald-950">Selesai mengerjakan?</p>
-                    <p class="mt-2 text-sm leading-6 text-emerald-900">Tombol ini hanya dipakai kalau semua soal sudah terisi. Kalau masih ada yang kosong, sistem akan mengarahkanmu ke soal pertama yang belum dijawab.</p>
+                    <p class="mt-2 text-sm leading-6 text-emerald-900">Tombol ini hanya dipakai kalau semua soal sudah terisi. Saat diklik, sistem akan menyimpan perubahan terakhir dulu lalu memeriksa apakah masih ada jawaban kosong.</p>
                     <button x-on:click="pendingChanges = false" wire:click="finish" wire:confirm="Kumpulkan ujian sekarang? Pastikan semua jawaban sudah terisi." class="premium-button mt-4 w-full rounded-md px-4 py-3 text-sm font-semibold text-white hover:brightness-105">Kumpulkan ujian</button>
                 </div>
             </aside>

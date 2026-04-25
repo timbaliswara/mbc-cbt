@@ -142,11 +142,11 @@ new class extends Component
     <div>
         <div class="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-800">Portal Siswa</div>
         <h1 class="mt-5 max-w-xl text-5xl font-semibold tracking-tight text-zinc-950">Masukkan token dari TIM MBC, lalu mulai saat kamu sudah siap.</h1>
-        <p class="mt-5 max-w-xl text-base leading-7 text-zinc-600">Token diberikan setelah pembayaran dikonfirmasi oleh TIM MBC. Pastikan koneksi internet stabil dan data diri sudah benar sebelum mulai.</p>
+        <p class="mt-5 max-w-xl text-base leading-7 text-zinc-600">Token diberikan setelah pembayaran dikonfirmasi oleh TIM MBC. Pastikan koneksi internet stabil dan data diri sudah benar sebelum mulai. Selama ujian, jawaban akan tersimpan saat berpindah soal, saat autosimpan berjalan, atau saat ujian dikumpulkan.</p>
         <div class="mt-8 grid gap-3 sm:grid-cols-3">
             <div class="surface rounded-md p-4"><p class="text-sm font-semibold text-zinc-950">Timer</p><p class="mt-1 text-sm text-zinc-500">Berjalan saat ujian dimulai</p></div>
             <div class="surface rounded-md p-4"><p class="text-sm font-semibold text-zinc-950">Auto-submit</p><p class="mt-1 text-sm text-zinc-500">Otomatis saat waktu habis</p></div>
-            <div class="surface rounded-md p-4"><p class="text-sm font-semibold text-zinc-950">Media</p><p class="mt-1 text-sm text-zinc-500">Soal bisa memakai gambar</p></div>
+            <div class="surface rounded-md p-4"><p class="text-sm font-semibold text-zinc-950">Peringatan fokus</p><p class="mt-1 text-sm text-zinc-500">1 peringatan, pelanggaran kedua auto-submit</p></div>
         </div>
     </div>
 
@@ -172,11 +172,15 @@ new class extends Component
                 @error('name') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
                 <button class="premium-button rounded-md px-4 py-2.5 text-sm font-semibold text-white hover:brightness-105">Mulai ujian</button>
             </div>
+            <div class="mt-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                <p class="font-semibold text-amber-950">Perlu diperhatikan</p>
+                <p class="mt-1">Usahakan tetap di halaman ujian. Jika peserta berpindah tab, jendela, atau aplikasi satu kali, sistem memberi peringatan. Jika terulang lagi, ujian langsung dikumpulkan otomatis.</p>
+            </div>
         </form>
 
         <form wire:submit="checkResult" class="surface rounded-md border border-emerald-100 p-5 shadow-sm">
             <p class="text-sm font-semibold text-zinc-950">Sudah pernah mengerjakan?</p>
-            <p class="mt-2 text-sm leading-6 text-zinc-600">Masukkan token dan nama peserta yang sama. Kalau ujian belum selesai, kamu akan masuk lagi ke ruang ujian. Kalau sudah selesai, hasilnya langsung terbuka.</p>
+            <p class="mt-2 text-sm leading-6 text-zinc-600">Masukkan token dan nama peserta yang sama. Kalau ujian belum selesai, kamu akan masuk lagi ke ruang ujian. Kalau sudah selesai, hasilnya langsung terbuka. Nama dan nomor HP sebaiknya sama persis seperti saat pertama masuk.</p>
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
                 <input wire:model="resultToken" class="premium-input w-full rounded-md px-3 py-2.5 text-sm uppercase transition" placeholder="Token yang sudah dipakai">
                 <input wire:model="resultName" class="premium-input w-full rounded-md px-3 py-2.5 text-sm transition" placeholder="Nama peserta">

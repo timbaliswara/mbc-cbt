@@ -366,7 +366,7 @@ CSV;
         $component = Livewire::test('student.exam-room', ['attempt' => $attempt]);
 
         $component->call('registerFocusViolation')
-            ->assertSet('focusWarning', 'Peringatan 1 dari 1: ruang ujian terdeteksi ditinggalkan. Jika kamu berpindah tab, jendela, atau aplikasi sekali lagi, ujian akan langsung dikumpulkan otomatis.');
+            ->assertSet('focusWarning', 'Peringatan 1 dari 1: ruang ujian terdeteksi ditinggalkan. TIM MBC menyarankan tetap di halaman ujian. Jika kamu berpindah tab, jendela, atau aplikasi sekali lagi, ujian akan langsung dikumpulkan otomatis.');
 
         $this->assertDatabaseHas('exam_attempts', [
             'id' => $attempt->id,
