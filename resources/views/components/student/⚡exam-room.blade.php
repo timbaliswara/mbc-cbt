@@ -682,6 +682,12 @@ new class extends Component
                     </section>
 
                     <aside class="space-y-5 lg:sticky lg:top-24 lg:self-start">
+                        <div class="rounded-md border border-emerald-200 bg-emerald-50 p-4">
+                            <p class="text-sm font-semibold text-emerald-950">Selesai mengerjakan?</p>
+                            <p class="mt-2 text-sm leading-6 text-emerald-900">Tombol ini hanya dipakai kalau semua soal sudah terisi. Saat diklik, sistem akan menyimpan perubahan terakhir dulu lalu memeriksa apakah masih ada jawaban kosong.</p>
+                            <button x-on:click="pendingChanges = false" wire:click="finish" wire:confirm="Kumpulkan ujian sekarang? Pastikan semua jawaban sudah terisi." class="premium-button mt-4 w-full rounded-md px-4 py-3 text-sm font-semibold text-white hover:brightness-105">Kumpulkan ujian</button>
+                        </div>
+
                         <div class="surface rounded-md p-5">
                             <h2 class="text-sm font-semibold text-zinc-950">Navigasi soal</h2>
                             <div class="mt-4 grid grid-cols-5 gap-2">
@@ -745,11 +751,6 @@ new class extends Component
                             </div>
                         @endif
 
-                        <div class="rounded-md border border-emerald-200 bg-emerald-50 p-4">
-                            <p class="text-sm font-semibold text-emerald-950">Selesai mengerjakan?</p>
-                            <p class="mt-2 text-sm leading-6 text-emerald-900">Tombol ini hanya dipakai kalau semua soal sudah terisi. Saat diklik, sistem akan menyimpan perubahan terakhir dulu lalu memeriksa apakah masih ada jawaban kosong.</p>
-                            <button x-on:click="pendingChanges = false" wire:click="finish" wire:confirm="Kumpulkan ujian sekarang? Pastikan semua jawaban sudah terisi." class="premium-button mt-4 w-full rounded-md px-4 py-3 text-sm font-semibold text-white hover:brightness-105">Kumpulkan ujian</button>
-                        </div>
                     </aside>
                 </div>
             </div>
